@@ -287,19 +287,14 @@
 </script>
 
 <!-- Update the main container div -->
-<div
-  class="min-h-screen flex flex-col relative {$theme === 'dark'
-    ? 'dark-mode'
-    : 'light-mode'}"
->
+<div class="min-h-screen flex flex-col text-gray-800 relative overflow-x-hidden {$theme === 'dark' ? 'dark-mode' : ''}">
   <main class="flex-grow flex flex-col justify-start items-center px-4 py-8">
     <div class="header-container">
-      <button class="back-button" on:click={goBack}>×</button>
-      <div class="main-heading-container">
-        <h1 class="main-heading">
-          Top Up
-          <div class="heading-underline"></div>
-        </h1>
+      <h1 class="text-4xl font-bold mb-2 text-gray-800 main-heading">
+        Top Up
+      </h1>
+      <div class="controls-container">
+        <button class="back-button" on:click={goBack}>×</button>
       </div>
     </div>
 
@@ -434,10 +429,12 @@
 <style>
   .top-up-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, 1fr); /* Always 3 columns on desktop */
     gap: 1rem;
     max-width: 800px;
     margin: 0 auto;
+    width: 100%;
+    padding: 0 1rem;
   }
 
   .top-up-button {
@@ -512,54 +509,44 @@
   }
 
   .header-container {
-    display: flex;
-    align-items: center;
+    position: relative;
     margin-bottom: 2rem;
-    position: relative;
-  }
-
-  .back-button {
-    position: absolute;
-    left: -40px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: #374151;
-    cursor: pointer;
-    transition: color 0.3s ease;
-    padding: 0;
-    line-height: 1;
-    z-index: 2; /* Ensure the button is above other elements */
-  }
-
-  .back-button:hover {
-    color: #1a1a1a;
-  }
-
-  .main-heading-container {
-    position: relative;
-    width: 100%; /* Ensure the container takes full width */
-    text-align: center; /* Center the heading */
+    width: 100%;
+    max-width: 800px;
+    text-align: center;
   }
 
   .main-heading {
+    display: inline-block;
     position: relative;
-    z-index: 1;
-    font-size: 3rem;
-    font-weight: bold;
-    color: #1a1a1a;
-    display: inline-block; /* Allow the underline to match the text width */
   }
 
-  .heading-underline {
+  .controls-container {
     position: absolute;
-    bottom: -4px;
-    left: 0;
-    width: 100%;
-    height: 8px;
-    background: #f7931a;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .back-button {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 0 0.5rem;
+    color: var(--text-primary);
+    transition: color 0.3s ease;
+  }
+
+  :global(.dark-mode) .back-button {
+    color: #ffffff !important;
+  }
+
+  .dark-mode .back-button {
+    color: #ffffff !important;
   }
 
   .copy-invoice-button {
@@ -625,163 +612,81 @@
     margin-bottom: 1rem;
     font-size: 1.2rem;
     font-weight: 600;
+    color: var(--text-primary);
   }
 
   /* Dark mode styles */
   :global(.dark-mode) {
-    background-color: var(--bg-primary, #1a1a1a);
-    color: var(--text-primary, #ffffff);
+    background-color: #1a1a1a;
   }
 
   :global(.dark-mode) .main-heading {
-    color: var(--text-primary, #ffffff);
+    color: #ffffff !important;
   }
 
   :global(.dark-mode) .text-gray-900 {
-    color: var(--text-primary, #ffffff);
+    color: #ffffff;
   }
 
   :global(.dark-mode) .text-gray-600,
   :global(.dark-mode) .text-gray-800 {
-    color: var(--text-secondary, #a0aec0);
+    color: #a0aec0;
   }
 
   :global(.dark-mode) .top-up-button {
-    background-color: var(--bg-secondary, #2d2d2d);
-    color: var(--text-primary, #ffffff);
+    background-color: #2d2d2d;
+    color: #ffffff;
   }
 
   :global(.dark-mode) .top-up-button:hover {
     background-color: #3a3a3a;
   }
 
-  :global(.dark-mode) .back-button {
-    color: var(--text-primary, #ffffff);
-  }
-
-  :global(.dark-mode) .qr-info {
-    color: var(--text-primary, #ffffff);
-  }
-
-  :global(.dark-mode) .spinner-container {
-    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-  }
-
-  :global(.dark-mode) .spinner {
-    border: 3px solid rgba(255, 255, 255, 0.1);
-    border-top: 3px solid #ffffff;
-  }
-
-  :global(.dark-mode) .copy-invoice-button {
-    background-color: #3182ce;
-  }
-
-  :global(.dark-mode) .copy-invoice-button:hover {
-    background-color: #2c5282;
-  }
-
-  /* Update QR code background in dark mode */
-  :global(.dark-mode) .bg-\[\#f3f4f6\] {
-    background-color: #ffffff;
-  }
-
-  /* Update dark mode styles */
-  :global(.dark-mode) .dark-mode-qr {
-    background-color: #ffffff !important; /* Force white background for QR visibility */
-    padding: 16px;
-    border-radius: 8px;
-  }
-
-  /* Update button styles for dark mode */
-  :global(.dark-mode) .copy-invoice-button {
+  :global(.dark-mode) .transaction-table {
     background-color: #2d2d2d;
-    color: white;
-    border: 2px solid #ffffff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 
-  :global(.dark-mode) .copy-invoice-button:hover {
-    background-color: #3a3a3a;
-    border-color: #f0f0f0;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-  }
-
-  :global(.dark-mode) .copy-invoice-button:focus {
-    outline: none;
-    box-shadow:
-      0 0 0 2px #1a1a1a,
-      0 0 0 4px rgba(255, 255, 255, 0.5);
-  }
-
-  /* Update the button's gradient effect for dark mode */
-  :global(.dark-mode) .copy-invoice-button::before {
-    background: linear-gradient(45deg, #2d2d2d, #3a3a3a, #4a4a4a, #5a5a5a);
-  }
-
-  .qr-code-container {
-    background-color: #ffffff;
-    padding: 16px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  /* Ensure QR code container stays white in dark mode */
-  :global(.dark-mode) .qr-code-container {
-    background-color: #ffffff !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  }
-
-  /* Force QR code to be black in both modes */
-  :global(.dark-mode) :global(svg path) {
-    fill: #000000 !important;
-  }
-
+  /* QR code specific styles */
   .qr-wrapper {
-    background-color: white !important;
+    background-color: white;
     padding: 1rem;
     border-radius: 8px;
   }
 
-  .qr-wrapper :global(svg) {
+  /* Ensure QR code stays visible in dark mode */
+  :global(.dark-mode) .qr-wrapper {
+    background-color: white !important;
+  }
+
+  :global(.dark-mode) .qr-wrapper :global(svg) {
     color: black !important;
     fill: black !important;
   }
 
-  /* Add these new styles for dark mode footer icon */
-  :global(.dark-mode) :global(.footer-icon) {
-    filter: invert(1);
-  }
-
-  :global(.dark-mode) :global(.footer-icon:hover) {
-    opacity: 0.8;
-  }
-
+  /* Add these transaction table styles */
   .transaction-history-container {
     width: 100%;
     max-width: 800px;
     margin-top: 2rem;
-    padding: 1rem;
   }
 
   .history-title {
     font-size: 1.5rem;
     font-weight: 600;
     margin-bottom: 1rem;
-    color: #1a1a1a;
   }
 
   .transaction-table {
-    background-color: #f0f2f5; /* Light grey background instead of white */
+    background-color: #f0f2f5;
     border-radius: 12px;
     overflow: hidden;
   }
 
   .transaction-row {
     display: grid;
-    grid-template-columns: 2fr 2fr 1fr 100px;
-    gap: 1rem;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
     padding: 1rem;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     align-items: center;
   }
 
@@ -793,18 +698,93 @@
     font-weight: 600;
   }
 
-  .sats-amount {
-    font-weight: normal;
-    color: #6b7280;
-    font-size: 0.875rem;
-    margin-left: 0.5rem;
-  }
-
   .time-cell {
     color: #6b7280;
-    justify-self: start;
+    font-size: 0.9rem;
   }
 
+  .status-cell {
+    text-align: center;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .status-badge.Pending {
+    background-color: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #f97316;
+  }
+
+  .status-badge.Paid {
+    background-color: #f0fdf4;
+    color: #166534;
+    border: 1px solid #22c55e;
+  }
+
+  .action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .copy-button,
+  .refresh-button {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: #6b7280;
+    transition: color 0.2s;
+  }
+
+  .copy-button:hover,
+  .refresh-button:hover {
+    color: #1a1a1a;
+  }
+
+  .copy-icon,
+  .refresh-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Dark mode styles for the transaction table */
+  :global(.dark-mode) .transaction-table {
+    background-color: #2d2d2d;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  :global(.dark-mode) .transaction-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  :global(.dark-mode) .amount-cell {
+    color: #ffffff;
+  }
+
+  :global(.dark-mode) .time-cell {
+    color: #9ca3af;
+  }
+
+  :global(.dark-mode) .copy-button,
+  :global(.dark-mode) .refresh-button {
+    color: #9ca3af;
+  }
+
+  :global(.dark-mode) .copy-button:hover,
+  :global(.dark-mode) .refresh-button:hover {
+    color: #ffffff;
+  }
+
+  /* Status badges remain the same in dark mode for better visibility */
+
+  /* Status badge styles */
   .status-badge {
     display: inline-flex;
     padding: 0.25rem 0.75rem;
@@ -838,100 +818,142 @@
     border: 1px solid #22c55e;
   }
 
-  .refresh-button {
-    background: none;
-    border: none;
-    padding: 0.5rem;
-    cursor: pointer;
-    color: #6b7280;
-    transition: all 0.2s;
-    border-radius: 50%;
-  }
-
-  .refresh-button:hover {
-    background-color: #f3f4f6;
-    color: #1a1a1a;
-  }
-
-  .refresh-icon {
-    width: 1.25rem;
-    height: 1.25rem;
-  }
-
-  /* Dark mode styles */
+  /* Add this to your dark mode styles */
   :global(.dark-mode) .history-title {
-    color: var(--text-primary, #ffffff);
-  }
-
-  :global(.dark-mode) .transaction-table {
-    background-color: var(--bg-secondary, #2d2d2d);
-  }
-
-  :global(.dark-mode) .transaction-row {
-    border-bottom-color: #404040;
-  }
-
-  :global(.dark-mode) .sats-amount {
-    color: #9ca3af;
-  }
-
-  :global(.dark-mode) .time-cell {
-    color: #9ca3af;
-  }
-
-  :global(.dark-mode) .refresh-button {
-    color: #9ca3af;
-  }
-
-  :global(.dark-mode) .refresh-button:hover {
-    background-color: #404040;
     color: #ffffff;
   }
 
-  :global(.dark-mode) .status-badge.pending {
-    background-color: #78350f;
-    color: #fef3c7;
+  /* Add these dark mode styles */
+  :global(.dark-mode) .qr-info {
+    color: #ffffff !important;
   }
 
-  :global(.dark-mode) .status-badge.success,
-  :global(.dark-mode) .status-badge.successful {
-    background-color: #064e3b;
-    color: #def7ec;
+  .dark-mode .qr-info {
+    color: #ffffff !important;
   }
 
-  .action-buttons {
-    display: flex;
-    gap: 0.5rem;
-    justify-self: end;
-  }
-
-  .copy-button {
-    background: none;
+  /* Update the copy-invoice-button styles */
+  .copy-invoice-button {
+    background-color: #1a1a1a;
+    color: white;
     border: none;
-    padding: 0.5rem;
+    border-radius: 9999px;
+    padding: 16px 32px;
+    font-size: 18px;
+    font-weight: 600;
     cursor: pointer;
-    color: #6b7280;
-    transition: all 0.2s;
-    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(26, 26, 26, 0.2);
+    width: 100%;
+    max-width: 300px;
+    position: relative;
+    overflow: hidden;
   }
 
-  .copy-button:hover {
-    background-color: #f3f4f6;
-    color: #1a1a1a;
+  /* Add dark mode styles for copy-invoice-button */
+  :global(.dark-mode) .copy-invoice-button {
+    background-color: #2d2d2d;
+    color: white;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 
-  .copy-icon {
-    width: 1.25rem;
-    height: 1.25rem;
+  :global(.dark-mode) .copy-invoice-button:hover {
+    background-color: #3a3a3a;
+    border-color: #f0f0f0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
   }
 
-  /* Dark mode styles */
-  :global(.dark-mode) .copy-button {
-    color: #9ca3af;
+  :global(.dark-mode) .copy-invoice-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #1a1a1a,
+      0 0 0 4px rgba(255, 255, 255, 0.5);
   }
 
-  :global(.dark-mode) .copy-button:hover {
-    background-color: #404040;
-    color: #ffffff;
+  :global(.dark-mode) .copy-invoice-button::before {
+    background: linear-gradient(45deg, #2d2d2d, #3a3a3a, #4a4a4a, #5a5a5a);
+  }
+
+  :global(body) {
+    overflow-x: hidden;
+    background-color: #ffffff;
+  }
+
+  :global(body.dark-mode) {
+    background-color: #1a1a1a;
+  }
+
+  .min-h-screen {
+    width: 100vw;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .top-up-button {
+    min-height: 100px;
+    height: auto;
+    padding: 1rem;
+    width: 100%;
+  }
+
+  @media (max-width: 640px) {
+    .top-up-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+      padding: 0 0.5rem;
+    }
+
+    .top-up-button {
+      min-height: 80px;
+      padding: 0.75rem;
+    }
+  }
+
+  /* Add these mobile-specific styles at the bottom of your style block */
+  @media (max-width: 640px) {
+    .transaction-row {
+      grid-template-columns: 1fr 1fr; /* Reduce to 2 columns */
+      grid-template-areas: 
+        "amount status"
+        "time actions";
+      gap: 0.5rem;
+      padding: 0.75rem;
+    }
+
+    .amount-cell {
+      grid-area: amount;
+      font-size: 0.9rem;
+    }
+
+    .time-cell {
+      grid-area: time;
+      font-size: 0.8rem;
+    }
+
+    .status-cell {
+      grid-area: status;
+      text-align: right;
+    }
+
+    .action-buttons {
+      grid-area: actions;
+      justify-content: flex-end;
+    }
+
+    .status-badge {
+      padding: 0.15rem 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .copy-icon,
+    .refresh-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .copy-button,
+    .refresh-button {
+      padding: 0.25rem;
+    }
   }
 </style>
