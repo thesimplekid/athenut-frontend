@@ -22,6 +22,7 @@
   import Toast from "../../components/Toast.svelte";
   import seed from "$lib/shared/store/wallet";
   import { theme } from "$lib/stores/theme";
+  import Navbar from "../../components/Navbar.svelte";
 
   /** @type {import("@cashu/cashu-ts").AmountPreference} */
 
@@ -280,10 +281,6 @@
     copyToClipboard(text);
     showToast("Invoice copied to clipboard.");
   }
-
-  function goBack() {
-    goto("/");
-  }
 </script>
 
 <svelte:head>
@@ -291,19 +288,17 @@
   <meta name="description" content="privacy-preserving web search powered by Kagi and Cashu." />
 </svelte:head>
 
-<!-- Update the main container div -->
-<div class="min-h-screen flex flex-col text-gray-800 relative overflow-x-hidden {$theme === 'dark' ? 'dark-mode' : ''}">
+<!-- Update the main container div and add Navbar -->
+<div class="min-h-screen flex flex-col text-gray-800 bg-white dark:bg-[var(--bg-primary)] dark:text-white">
+  <Navbar />
   <main class="flex-grow flex flex-col justify-start items-center px-4 py-8">
     <div class="header-container">
-      <h1 class="text-4xl font-bold mb-2 text-gray-800 main-heading">
+      <h1 class="text-4xl font-bold mb-2 text-gray-800 dark:text-white">
         Top Up
       </h1>
-      <div class="controls-container">
-        <button class="back-button" on:click={goBack}>×</button>
-      </div>
     </div>
 
-    <div class="text-2xl font-semibold text-gray-900 mt-2 mb-4">
+    <div class="text-2xl font-semibold text-gray-900 dark:text-white mt-2 mb-4">
       You have {balance} searches left
     </div>
 
@@ -960,5 +955,16 @@
     .refresh-button {
       padding: 0.25rem;
     }
+  }
+
+  /* Update dark mode styles to use CSS variables consistently */
+  :global(.dark) {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-hover: #3a3a3a;
+    --text-primary: #ffffff;
+    --text-secondary: #a0aec0;
+    --text-hover: #f0f0f0;
+    --border-color: #333;
   }
 </style>
