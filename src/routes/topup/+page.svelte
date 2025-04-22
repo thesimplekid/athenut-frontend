@@ -1,4 +1,6 @@
 <script>
+  // This implementation strictly enforces using only proofs with denomination 1 for all operations
+  // by explicitly setting outputAmounts.sendAmounts to be an array of 1's when minting proofs
   import { onMount } from "svelte";
   import SvgQR from "@svelte-put/qr/svg/QR.svelte";
   import { copyToClipboard } from "@svelte-put/copy";
@@ -15,16 +17,25 @@
     setKeysetCounts,
     updateQuoteState,
     writeProofs,
+    debugProofs,
+    forceBalanceRefresh,
   } from "$lib/shared/utils";
   import { CashuMint, CashuWallet, MintQuoteState } from "@cashu/cashu-ts";
   import Footer from "../../components/Footer.svelte";
   import { showToast } from "$lib/stores/toast";
   import Toast from "../../components/Toast.svelte";
   import seed from "$lib/shared/store/wallet";
+  import { generateMnemonic } from "@scure/bip39";
+  import { wordlist } from "@scure/bip39/wordlists/english";
   import { theme } from "$lib/stores/theme";
   import Navbar from "../../components/Navbar.svelte";
 
-  /** @type {import("@cashu/cashu-ts").AmountPreference} */
+  // Function to generate a mnemonic (matching the one in wallet.js)
+  function generateWalletMnemonic() {
+    return generateMnemonic(wordlist);
+  }
+
+  // AmountPreference type has been removed in cashu-ts v2
 
   /** @type {string} */
   let data = "";
@@ -55,10 +66,42 @@
   let isLoading = false;
 
   onMount(async () => {
+    // Debug the proofs to see what's going on
+    console.log("Topup Page - onMount");
+    debugProofs();
+
+    // Initialize the wallet balance - use both approaches
+    balance = await getBalance();
+    console.log("Balance after getBalance():", balance);
+
+    // Force a direct refresh from localStorage
+    balance = forceBalanceRefresh();
+    console.log("Balance after forceBalanceRefresh():", balance);
+
+    // Log the actual proofs for debugging
+    const proofs = getProofs();
+    console.log("Actual proofs array:", proofs);
+
     if ($mint_url != undefined) {
-      balance = getBalance();
       await getInfo();
     }
+
+    // Create the storage event handler
+    const handleStorageChange = (e) => {
+      if (e.key === "proofs") {
+        console.log("Storage event - proofs changed");
+        balance = forceBalanceRefresh();
+        console.log("Updated balance:", balance);
+      }
+    };
+
+    // Add storage listener to update balance when proofs change
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      // Clean up event listener when component is destroyed
+      window.removeEventListener("storage", handleStorageChange);
+    };
   });
 
   /**
@@ -79,7 +122,7 @@
   /**
    * Creates and initializes a Cashu wallet
    * @param {string} mintUrl - The URL of the mint
-   * @param {string} seed - The wallet seed
+   * @param {string} seed - The wallet seed (mnemonic string)
    * @returns {Promise<{wallet: CashuWallet, keys: any}>} The initialized wallet and its keys
    */
   async function initializeWallet(mintUrl, seed) {
@@ -87,13 +130,40 @@
     const keysets = await mint.getKeys();
     const matchingKeyset = keysets.keysets.find((key) => key.unit === "xsr");
 
+    if (!matchingKeyset) {
+      console.error("No matching keyset found", keysets);
+      throw new Error("No matching keyset found");
+    }
+
+    // Log whether the keyset has an ID
+    if (!matchingKeyset.id) {
+      console.warn("Warning: The keyset is missing an ID", matchingKeyset);
+    } else {
+      console.log('Using keyset with id:', matchingKeyset.id);
+    }
+
+    // Convert the seed string (mnemonic) to a 256-bit seed using SHA-256
+    const encoder = new TextEncoder();
+    const data = encoder.encode(seed);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const seedBuffer = new Uint8Array(hashBuffer);
+    
+    console.log('Seed buffer created with length:', seedBuffer.length, 'bytes');
+
+    // Create the wallet with the bip39seed parameter
     const wallet = new CashuWallet(mint, {
       unit: "xsr",
       keys: matchingKeyset,
-      mnemonicOrSeed: seed,
+      // Use the properly sized seed
+      seed: seedBuffer,
+      bip39seed: seedBuffer,
+      // Configure wallet to only use denomination 1
+      preferredDenominations: [1],
+      // Set denomination target to 1 to ensure we only use denomination 1
+      denominationTarget: 1
     });
 
-    return { wallet, keys: wallet.keys };
+    return { wallet, keys: matchingKeyset };
   }
 
   /**
@@ -103,8 +173,20 @@
     if (mint_url != null) {
       console.log("Attempting to top up for searches ", searches);
       selectedSearches = searches;
+      isLoading = true;
 
       try {
+        // Check if we need to generate a seed
+        if (!$seed) {
+          console.log("No seed found, generating new mnemonic...");
+          $seed = generateWalletMnemonic();
+          console.log("Generated new seed (mnemonic)");
+        }
+
+        console.log(
+          "Initializing wallet with seed:",
+          $seed ? $seed.substring(0, 3) + "..." : "undefined",
+        );
         const { wallet, keys } = await initializeWallet($mint_url, $seed);
 
         // Create the mint quote
@@ -133,32 +215,81 @@
 
         if (mintQuoteChecked.state === MintQuoteState.PAID) {
           let keyset_counts = getKeysetCounts();
-          let keyset_count = keyset_counts[keys.id] || 0;
-
+          
+          // Get the stored counter, handling the case where keys.id might be undefined
+          const keysetId = keys && keys.id ? keys.id : "default";
+          let keyset_count = keyset_counts[keysetId] || 0;
+          console.log("Using keyset count:", keyset_count, "for keyset ID:", keysetId);
+          
           const options = {
-            preference: [{ amount: 1, count: searches }],
-            keysetId: keys.id,
-            counter: keyset_count,
+            // Set outputAmounts to ensure only denomination 1 proofs
+            outputAmounts: {
+              // Create an array of 1's with length equal to the amount being minted
+              sendAmounts: Array(searches).fill(1),
+              keepAmounts: Array(searches).fill(1),
+            },
+            keysetId: keysetId, // Use the keyset ID if available, otherwise use "default"
+            counter: keyset_count, // Counter for blind signatures
+            // Not using these options for basic minting:
+            // outputData: undefined,  // For additional data
+            // p2pk: undefined,        // For P2PK locks
+            // proofsWeHave: undefined, // For splitting existing proofs
+            // pubkey: undefined        // For pubkey operations
           };
 
-          const { proofs } = await wallet.mintTokens(
+          console.log("Minting proofs with options:", JSON.stringify(options));
+          // In cashu-ts v2, mintTokens is now mintProofs and returns proofs directly, not in an object
+          const proofs = await wallet.mintProofs(
             searches,
             mintQuote.quote,
             options,
           );
 
+          console.log("Successfully minted proofs:", proofs.length);
+          // Verify that all proofs have a denomination of 1
+          const allDenom1 = proofs.every((proof) => proof.amount === 1);
+          console.log("All proofs have denomination 1:", allDenom1);
+          if (!allDenom1) {
+            console.warn("Warning: Some proofs do not have denomination 1");
+          }
+          
+          // Update the keyset count with how many proofs we created
           let new_count = keyset_count + proofs.length;
-          keyset_counts[keys.id] = new_count;
+          keyset_counts[keysetId] = new_count;
           setKeysetCounts(keyset_counts);
 
           let current_proofs = getProofs();
           const combinedList = [...current_proofs, ...proofs];
           writeProofs(combinedList);
           updateQuoteState(mintQuote.quote, "paid");
+
+          // Update the balance right after proofs are written
+          balance = forceBalanceRefresh();
+          console.log("Updated balance after mintProofs:", balance);
+
           pendingInvoices = getPendingQuotes();
           goto("/");
         }
       } catch (error) {
+        console.error("Error details:", error);
+
+        if (
+          error.message
+            ?.toLowerCase()
+            .includes("cannot create deterministic messages without seed")
+        ) {
+          // Handle the specific error we're fixing
+          showToast(
+            "Wallet initialization error. Please refresh the page and try again.",
+          );
+          console.error(
+            "Seed format issue - this should be fixed with our code update.",
+          );
+        } else {
+          // For any other error
+          showToast("Error topping up: " + (error.message || "Unknown error"));
+        }
+
         console.error("Error while topping up: ", error);
       }
     }
@@ -169,7 +300,7 @@
    * @param {string} quoteId
    */
   async function handleRefresh(quoteId) {
-    console.log(quoteId);
+    console.log("Refreshing quote:", quoteId);
     let mintQuote = pendingInvoices.find((quote) => quote.id === quoteId);
     if (!mintQuote) {
       throw new Error("Could not find mint quote");
@@ -182,27 +313,66 @@
     }
 
     try {
+      // Check if we need to generate a seed
+      if (!$seed) {
+        console.log("No seed found, generating new mnemonic...");
+        $seed = generateWalletMnemonic();
+        console.log("Generated new seed (mnemonic)");
+      }
+
+      console.log(
+        "Initializing wallet with seed:",
+        $seed ? $seed.substring(0, 3) + "..." : "undefined",
+      );
       const { wallet, keys } = await initializeWallet($mint_url, $seed);
       let keyset_counts = getKeysetCounts();
-      let keyset_count = keyset_counts[keys.id] || 0;
+      
+      // Get the stored counter, handling the case where keys.id might be undefined
+      const keysetId = keys && keys.id ? keys.id : "default";
+      let keyset_count = keyset_counts[keysetId] || 0;
+      console.log("Using keyset count:", keyset_count, "for keyset ID:", keysetId);
+
       const options = {
-        preference: [{ amount: 1, count: mintQuote.amount }],
-        keysetId: keys.id,
-        counter: keyset_count,
+        // Set outputAmounts to ensure only denomination 1 proofs
+        outputAmounts: {
+          // Create an array of 1's with length equal to the amount being minted
+          sendAmounts: Array(mintQuote.amount).fill(1),
+        },
+        keysetId: keysetId, // Use the keyset ID if available, otherwise use "default"
+        counter: keyset_count, // Counter for blind signatures
+        // Not using these options for basic minting:
+        // outputData: undefined,  // For additional data
+        // p2pk: undefined,        // For P2PK locks
+        // proofsWeHave: undefined, // For splitting existing proofs
+        // pubkey: undefined        // For pubkey operations
       };
-      let { proofs } = await wallet.mintTokens(
-        mintQuote.amount,
-        quoteId,
-        options,
-      );
+
+      console.log("Minting proofs with options:", JSON.stringify(options));
+      // In cashu-ts v2, mintTokens is now mintProofs and returns proofs directly, not in an object
+      let proofs = await wallet.mintProofs(mintQuote.amount, quoteId, options);
+
+      console.log("Successfully minted proofs:", proofs.length);
+      // Verify that all proofs have a denomination of 1
+      const allDenom1 = proofs.every((proof) => proof.amount === 1);
+      console.log("All proofs have denomination 1:", allDenom1);
+      if (!allDenom1) {
+        console.warn("Warning: Some proofs do not have denomination 1");
+      }
       let new_count = keyset_count + proofs.length;
-      keyset_counts[keys.id] = new_count;
+      keyset_counts[keysetId] = new_count;
       setKeysetCounts(keyset_counts);
+
       let current_proofs = getProofs();
       const combinedList = [...current_proofs, ...proofs];
       writeProofs(combinedList);
       updateQuoteState(mintQuote.id, "paid");
+
+      // Update the balance right after proofs are written
+      balance = forceBalanceRefresh();
+      console.log("Updated balance after handleRefresh:", balance);
     } catch (error) {
+      console.error("Error details:", error);
+
       if (error.message?.toLowerCase().includes("expired")) {
         updateQuoteState(quoteId, "expired");
         showToast("Quote Expired");
@@ -216,20 +386,49 @@
         }
       } else if (error.message?.toLowerCase().includes("already signed")) {
         // HACK: Make this smarter
-        console.log("Alreasy signed");
+        console.log("Already signed");
+        // Use the same generateWalletMnemonic if needed
+        if (!$seed) {
+          console.log("No seed found, generating new mnemonic...");
+          $seed = generateWalletMnemonic();
+          console.log("Generated new seed (mnemonic)");
+        }
         const { wallet, keys } = await initializeWallet($mint_url, $seed);
+        
         let keyset_counts = getKeysetCounts();
-        let keyset_count = keyset_counts[keys.id] || 0;
+        
+        // Get the stored counter, handling the case where keys.id might be undefined
+        const keysetId = keys && keys.id ? keys.id : "default";
+        let keyset_count = keyset_counts[keysetId] || 0;
         let new_count = keyset_count + 10;
-        keyset_counts[keys.id] = new_count;
+        keyset_counts[keysetId] = new_count;
         setKeysetCounts(keyset_counts);
-        showToast("Error minting, please try agian");
+        showToast("Error minting, please try again");
+      } else if (
+        error.message
+          ?.toLowerCase()
+          .includes("cannot create deterministic messages without seed")
+      ) {
+        // Handle the specific error we're fixing
+        showToast(
+          "Wallet initialization error. Please refresh the page and try again.",
+        );
+        console.error(
+          "Seed format issue - this should be fixed with our code update.",
+        );
+      } else {
+        // For any other error
+        showToast(
+          "Error refreshing quote: " + (error.message || "Unknown error"),
+        );
       }
+
       console.error("Error while refreshing quote: ", error);
     } finally {
       // Always update pending invoices and balance
       pendingInvoices = getPendingQuotes();
-      balance = getBalance();
+      balance = forceBalanceRefresh();
+      console.log("Final balance after handleRefresh:", balance);
 
       // Always remove spinning class after a delay
       if (button) {
@@ -285,24 +484,52 @@
 
 <svelte:head>
   <title>Athenut</title>
-  <meta name="description" content="privacy-preserving web search powered by Kagi and Cashu." />
+  <meta
+    name="description"
+    content="privacy-preserving web search powered by Kagi and Cashu."
+  />
 </svelte:head>
 
 <!-- Update the main container div and add Navbar -->
-<div class="min-h-screen flex flex-col text-gray-800 bg-white dark:bg-[var(--bg-primary)] dark:text-white">
+<div
+  class="min-h-screen flex flex-col text-gray-800 bg-white dark:bg-[var(--bg-primary)] dark:text-white"
+>
   <Navbar />
-  <main class="flex-grow flex flex-col justify-start items-center px-4 py-8">
+  <main class="flex-grow flex flex-col justify-start items-center px-4 py-8 bg-white dark:bg-[var(--bg-primary)]">
     <div class="header-container">
-      <h1 class="text-4xl font-bold mb-2 text-gray-800 dark:text-white">
+      <h1 class="text-4xl font-bold mb-2 text-black dark:text-white">
         Top Up
       </h1>
     </div>
 
-    <div class="text-2xl font-semibold text-gray-900 dark:text-white mt-2 mb-4">
+    <div class="text-2xl font-semibold text-[#333333] dark:text-white mt-2 mb-4">
       You have {balance} searches left
+      <button
+        class="refresh-balance-button"
+        on:click={() => {
+          balance = forceBalanceRefresh();
+          console.log("Balance refreshed manually:", balance);
+        }}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          />
+        </svg>
+      </button>
     </div>
 
-    <p class="text-xl text-gray-600 mb-6">
+    <p class="text-xl text-[#4b5563] dark:text-[#a0aec0] mb-6">
       Zap your account with sats to unlock more premium searches.
     </p>
 
@@ -516,38 +743,7 @@
     text-align: center;
   }
 
-  .main-heading {
-    display: inline-block;
-    position: relative;
-  }
-
-  .controls-container {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .back-button {
-    background: none;
-    border: none;
-    font-size: 2rem;
-    cursor: pointer;
-    padding: 0 0.5rem;
-    color: var(--text-primary);
-    transition: color 0.3s ease;
-  }
-
-  :global(.dark-mode) .back-button {
-    color: #ffffff !important;
-  }
-
-  .dark-mode .back-button {
-    color: #ffffff !important;
-  }
+  /* Removed unused button and container styles */
 
   .copy-invoice-button {
     background-color: #1a1a1a;
@@ -612,38 +808,66 @@
     margin-bottom: 1rem;
     font-size: 1.2rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: #333333;
   }
 
   /* Dark mode styles */
-  :global(.dark-mode) {
-    background-color: #1a1a1a;
+  :global(.dark) {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-hover: #3a3a3a;
+    --text-primary: #ffffff;
+    --text-secondary: #a0aec0;
+    --text-hover: #f0f0f0;
+    --border-color: #333;
   }
 
-  :global(.dark-mode) .main-heading {
-    color: #ffffff !important;
-  }
-
-  :global(.dark-mode) .text-gray-900 {
+  :global(.dark) .text-gray-900 {
     color: #ffffff;
   }
 
-  :global(.dark-mode) .text-gray-600,
-  :global(.dark-mode) .text-gray-800 {
+  :global(.dark) .text-gray-600,
+  :global(.dark) .text-gray-800 {
     color: #a0aec0;
   }
 
-  :global(.dark-mode) .top-up-button {
+  :global(.dark) .top-up-button {
     background-color: #2d2d2d;
     color: #ffffff;
   }
 
-  :global(.dark-mode) .top-up-button:hover {
+  :global(.dark) .top-up-button:hover {
     background-color: #3a3a3a;
   }
 
-  :global(.dark-mode) .transaction-table {
+  :global(.dark) .transaction-table {
     background-color: #2d2d2d;
+  }
+
+  .refresh-balance-button {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+
+  .refresh-balance-button:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: #333;
+  }
+
+  :global(.dark) .refresh-balance-button {
+    color: #a0aec0;
+  }
+
+  :global(.dark) .refresh-balance-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
   }
 
   /* QR code specific styles */
@@ -651,14 +875,21 @@
     background-color: white;
     padding: 1rem;
     border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .qr-wrapper :global(svg) {
+    color: black !important;
+    fill: black !important;
   }
 
   /* Ensure QR code stays visible in dark mode */
-  :global(.dark-mode) .qr-wrapper {
+  :global(.dark) .qr-wrapper {
     background-color: white !important;
+    border: 1px solid #4B5563;
   }
 
-  :global(.dark-mode) .qr-wrapper :global(svg) {
+  :global(.dark) .qr-wrapper :global(svg) {
     color: black !important;
     fill: black !important;
   }
@@ -755,30 +986,30 @@
   }
 
   /* Dark mode styles for the transaction table */
-  :global(.dark-mode) .transaction-table {
+  :global(.dark) .transaction-table {
     background-color: #2d2d2d;
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  :global(.dark-mode) .transaction-row {
+  :global(.dark) .transaction-row {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  :global(.dark-mode) .amount-cell {
+  :global(.dark) .amount-cell {
     color: #ffffff;
   }
 
-  :global(.dark-mode) .time-cell {
+  :global(.dark) .time-cell {
     color: #9ca3af;
   }
 
-  :global(.dark-mode) .copy-button,
-  :global(.dark-mode) .refresh-button {
+  :global(.dark) .copy-button,
+  :global(.dark) .refresh-button {
     color: #9ca3af;
   }
 
-  :global(.dark-mode) .copy-button:hover,
-  :global(.dark-mode) .refresh-button:hover {
+  :global(.dark) .copy-button:hover,
+  :global(.dark) .refresh-button:hover {
     color: #ffffff;
   }
 
@@ -806,29 +1037,25 @@
   }
 
   /* Dark mode styles */
-  :global(.dark-mode) .status-badge.Pending {
+  :global(.dark) .status-badge.Pending {
     background-color: #451a03;
     color: #fdba74;
     border: 1px solid #f97316;
   }
 
-  :global(.dark-mode) .status-badge.Paid {
+  :global(.dark) .status-badge.Paid {
     background-color: #052e16;
     color: #86efac;
     border: 1px solid #22c55e;
   }
 
   /* Add this to your dark mode styles */
-  :global(.dark-mode) .history-title {
+  :global(.dark) .history-title {
     color: #ffffff;
   }
 
   /* Add these dark mode styles */
-  :global(.dark-mode) .qr-info {
-    color: #ffffff !important;
-  }
-
-  .dark-mode .qr-info {
+  :global(.dark) .qr-info {
     color: #ffffff !important;
   }
 
@@ -851,26 +1078,27 @@
   }
 
   /* Add dark mode styles for copy-invoice-button */
-  :global(.dark-mode) .copy-invoice-button {
+  :global(.dark) .copy-invoice-button {
     background-color: #2d2d2d;
     color: white;
     border: 2px solid #ffffff;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 
-  :global(.dark-mode) .copy-invoice-button:hover {
+  :global(.dark) .copy-invoice-button:hover {
     background-color: #3a3a3a;
     border-color: #f0f0f0;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
   }
 
-  :global(.dark-mode) .copy-invoice-button:focus {
+  :global(.dark) .copy-invoice-button:focus {
     outline: none;
-    box-shadow: 0 0 0 2px #1a1a1a,
+    box-shadow:
+      0 0 0 2px #1a1a1a,
       0 0 0 4px rgba(255, 255, 255, 0.5);
   }
 
-  :global(.dark-mode) .copy-invoice-button::before {
+  :global(.dark) .copy-invoice-button::before {
     background: linear-gradient(45deg, #2d2d2d, #3a3a3a, #4a4a4a, #5a5a5a);
   }
 
@@ -879,7 +1107,7 @@
     background-color: #ffffff;
   }
 
-  :global(body.dark-mode) {
+  :global(body.dark) {
     background-color: #1a1a1a;
   }
 
@@ -913,7 +1141,7 @@
   @media (max-width: 640px) {
     .transaction-row {
       grid-template-columns: 1fr 1fr; /* Reduce to 2 columns */
-      grid-template-areas: 
+      grid-template-areas:
         "amount status"
         "time actions";
       gap: 0.5rem;

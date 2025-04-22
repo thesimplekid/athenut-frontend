@@ -1,9 +1,10 @@
 <script>
     import { theme } from '$lib/stores/theme';
     import logomark from '/src/logomark.png';
-    import { getBalance } from '$lib/shared/utils';
+    import { getBalance, forceBalanceRefresh } from '$lib/shared/utils';
     import { onMount } from 'svelte';
   
+    // If balance prop is provided, use it. Otherwise, will be set in onMount
     export let balance = 0;
   
     let isDropdownOpen = false;
@@ -15,11 +16,36 @@
     function toggleTheme() {
       theme.update((current) => (current === 'light' ? 'dark' : 'light'));
     }
-  
-    // Optional: Fetch balance here if you prefer
-    // onMount(async () => {
-    //   balance = await getBalance();
-    // });
+    
+    // Always refresh the balance when the component is mounted
+    onMount(async () => {
+      // Use forceBalanceRefresh to get directly from localStorage
+      balance = forceBalanceRefresh();
+      console.log('Navbar - balance after forceBalanceRefresh:', balance);
+      
+      // Set up a listener for storage changes
+      const handleStorageChange = (e) => {
+        if (e.key === 'proofs') {
+          console.log('Navbar - Storage event - proofs changed');
+          balance = forceBalanceRefresh();
+          console.log('Navbar - Updated balance:', balance);
+        }
+      };
+      
+      // Add storage listener
+      window.addEventListener('storage', handleStorageChange);
+      
+      return () => {
+        // Clean up listener when component is destroyed
+        window.removeEventListener('storage', handleStorageChange);
+      };
+    });
+    
+    // Function to manually refresh the balance
+    function refreshBalance() {
+      balance = forceBalanceRefresh();
+      console.log('Navbar - Balance manually refreshed:', balance);
+    }
   </script>
   
   <!-- Navbar HTML -->

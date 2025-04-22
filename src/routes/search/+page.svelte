@@ -6,7 +6,9 @@
   import {
     addSpentProof,
     getBalance,
+    getKeysetCounts,
     getProofs,
+    setKeysetCounts,
     writeProofs,
   } from "$lib/shared/utils";
   import { getEncodedTokenV4 } from "@cashu/cashu-ts";
@@ -95,17 +97,17 @@
     let proofs = getProofs();
 
     let proof = proofs.pop();
+    
+    // Preserve the keyset ID from the proof
+    const keysetId = proof.id ? proof.id : "default";
+    console.log(`Using keyset ID: ${keysetId} for search token redemption`);
 
     try {
       /** @type {import("@cashu/cashu-ts").Token} */
       let token = {
-        token: [
-          {
-            mint: $mint_url,
-            proofs: [proof],
-          },
-        ],
-        unit: "XSR",
+        mint: $mint_url,
+        proofs: [proof],
+        unit: "XSR"
       };
 
       let encoded_token = getEncodedTokenV4(token);
@@ -121,6 +123,12 @@
       }
 
       search_results = await response.json();
+
+      // Update keyset counts to preserve the keyset ID
+      let keyset_counts = getKeysetCounts();
+      let keyset_count = keyset_counts[keysetId] || 0;
+      keyset_counts[keysetId] = keyset_count + 1; // Increment counter for this keyset
+      setKeysetCounts(keyset_counts);
 
       /// Add spent proof to store
       addSpentProof(proof);
