@@ -2,10 +2,20 @@
   import { goto } from "$app/navigation";
   import seed from "$lib/shared/store/wallet";
   import mint_url from "$lib/shared/store/mint_url";
-  import { CashuMint, CashuWallet, CheckStateEnum } from "@cashu/cashu-ts";
+  import {
+    CashuMint,
+    CashuWallet,
+    CheckStateEnum,
+    getDecodedToken,
+  } from "@cashu/cashu-ts";
   import Footer from "../../components/Footer.svelte";
   import Toast from "../../components/Toast.svelte";
-  import { getProofs, writeProofs } from "$lib/shared/utils";
+  import {
+    getProofs,
+    writeProofs,
+    getKeysetCounts,
+    setKeysetCounts,
+  } from "$lib/shared/utils";
   import { onMount } from "svelte";
   import { theme } from "$lib/stores/theme";
   import Navbar from "../../components/Navbar.svelte";
@@ -28,15 +38,15 @@
     const mint = new CashuMint($mint_url);
     let keysets = await mint.getKeys();
     let matchingKeyset = keysets.keysets.find((key) => key.unit === "xsr");
-    
+
     // Convert the seed string to a proper 256-bit seed using SHA-256
     const encoder = new TextEncoder();
     const data = encoder.encode($seed);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
     const seedBuffer = new Uint8Array(hashBuffer);
-    
-    console.log('Seed buffer created with length:', seedBuffer.length, 'bytes');
-    
+
+    console.log("Seed buffer created with length:", seedBuffer.length, "bytes");
+
     wallet = new CashuWallet(mint, {
       unit: "xsr",
       keys: matchingKeyset,
@@ -46,7 +56,7 @@
       // Configure wallet to only use denomination 1
       preferredDenominations: [1],
       // Set denomination target to 1 to ensure we only use denomination 1
-      denominationTarget: 1
+      denominationTarget: 1,
     });
     return wallet;
   }
@@ -68,8 +78,8 @@
     // In cashu-ts v2, checkProofsSpent has been replaced by checkProofsStates
     let proofStates = await wallet.checkProofsStates(proofs);
     // Filter the original proofs array to remove spent ones
-    let unspentProofs = proofs.filter((proof, i) => 
-      proofStates[i]?.state !== CheckStateEnum.SPENT
+    let unspentProofs = proofs.filter(
+      (proof, i) => proofStates[i]?.state !== CheckStateEnum.SPENT,
     );
     console.log("Restored ", unspentProofs.length, " proofs");
     let current_proofs = getProofs();
@@ -92,11 +102,11 @@
       // Set the restoration state to true to show the loading spinner
       isRestoring = true;
       errorMessage = "";
-      
+
       // Set the seed value in the store
       // This will automatically save the seed to local storage via the seed store subscription
       $seed = words.join(" ");
-      
+
       // Initialize wallet with the proper seed
       if (!wallet) {
         await initializeWallet();
@@ -114,19 +124,35 @@
 
       while (empty_batches < 3) {
         console.log("Restoring wallet with seed phrase");
-        console.log("Wallet has seed property set:", wallet._seed ? "Yes (" + wallet._seed.length + " bytes)" : "No");
+        console.log(
+          "Wallet has seed property set:",
+          wallet._seed ? "Yes (" + wallet._seed.length + " bytes)" : "No",
+        );
         // The restore method may require seed to derive outputs
         // Parameters: start, end, callback, secret_indices, customIds
-        let restores = await wallet.restore(start_counter, end_counter, null, null, null);
-        console.log("Received ", restores.proofs.length, " signatures from mint");
-        
+        let restores = await wallet.restore(
+          start_counter,
+          end_counter,
+          null,
+          null,
+          null,
+        );
+        console.log(
+          "Received ",
+          restores.proofs.length,
+          " signatures from mint",
+        );
+
         if (restores.proofs.length > 0) {
           // Calculate amount from this batch of proofs
-          const batchAmount = restores.proofs.reduce((sum, proof) => sum + (proof.amount || 0), 0);
+          const batchAmount = restores.proofs.reduce(
+            (sum, proof) => sum + (proof.amount || 0),
+            0,
+          );
           totalAmountRestored += batchAmount;
           totalProofsRestored += restores.proofs.length;
         }
-        
+
         start_counter += 100;
         end_counter += 100;
         if (restores.proofs.length === 0) {
@@ -134,24 +160,29 @@
         }
         await checkProofState(restores.proofs);
       }
-      
+
       // Show success message with amount restored
       if (totalProofsRestored > 0) {
-        showToast(`Restored ${totalProofsRestored} proofs (${totalAmountRestored} sats)`, 5000);
-        
+        showToast(
+          `Restored ${totalProofsRestored} proofs (${totalAmountRestored} sats)`,
+          5000,
+        );
+
         // Navigate to home page after a short delay
         setTimeout(() => {
-          goto('/');
+          goto("/");
         }, 1000);
       } else {
         showToast("No proofs were found to restore", 3000);
       }
-      
-      console.log(`Wallet restoration completed. Restored ${totalProofsRestored} proofs with ${totalAmountRestored} sats`);
+
+      console.log(
+        `Wallet restoration completed. Restored ${totalProofsRestored} proofs with ${totalAmountRestored} sats`,
+      );
     } catch (error) {
       console.error("Restore error:", error);
       errorMessage = `Failed to restore wallet: ${error.message}`;
-      
+
       // Show error in toast as well
       showToast(`Restore failed: ${error.message}`, 5000);
     } finally {
@@ -198,35 +229,141 @@
         throw new Error("Failed to initialize wallet");
       }
 
-      // Attempt to receive the token
-      const result = await wallet.receive(tokenInput);
-      
-      // Check if the proofs were received successfully
-      if (result.proofs && result.proofs.length > 0) {
-        await checkProofState(result.proofs);
-        
+      // Simple validation - make sure the token has a valid format
+      // Cashu tokens typically start with "cashuA" and have a valid encoding
+      if (!tokenInput.trim().startsWith("cashu")) {
+        console.error("Token doesn't start with 'cashu'");
+        throw new Error(
+          "Invalid token format. Token should start with 'cashu'.",
+        );
+      }
+
+      // Log the token format for debugging (first 10 chars only for privacy)
+      console.log(
+        "Token input first 10 chars:",
+        tokenInput.substring(0, 10) + "...",
+      );
+
+      // Get the keys information for proper counter tracking
+      const keysets = await wallet.mint.getKeys();
+      const matchingKeyset = keysets.keysets.find((key) => key.unit === "xsr");
+
+      if (!matchingKeyset) {
+        throw new Error("Could not find matching keyset in mint");
+      }
+
+      // Decode token to determine its total value
+      // We need to do this first to create the right output amount configuration
+      console.log("Decoding token to determine value...");
+
+      // Use getDecodedToken from cashu-ts to decode the token
+      // This function parses the token format and extracts the data
+      const decodedToken = getDecodedToken(tokenInput);
+      console.log("Decoded token structure:", decodedToken);
+
+      // Calculate total token value
+      const totalTokenValue = decodedToken.proofs.reduce(
+        (sum, proof) => sum + (proof.amount || 0),
+        0,
+      );
+
+      console.log("Total token value:", totalTokenValue);
+      console.log("Number of proofs in token:", decodedToken.proofs.length);
+
+      if (totalTokenValue <= 0) {
+        throw new Error("Could not determine token value or token is empty");
+      }
+
+      // Verify that the number of outputs matches the number of proofs for unit denominations
+      if (totalTokenValue !== decodedToken.proofs.length) {
+        console.warn(
+          `Token value (${totalTokenValue}) does not match number of proofs (${decodedToken.proofs.length}). ` +
+            "This may indicate a non-unit denomination token.",
+        );
+      }
+
+      // Create an array of 1s with length equal to total token value
+      const unitDenominations = Array(totalTokenValue).fill(1);
+      console.log(`Creating ${unitDenominations.length} proofs of value 1`);
+
+      // Set up the receive options with unit denominations
+      const receiveOptions = {
+        outputAmounts: {
+          sendAmounts: unitDenominations,
+        },
+      };
+
+      // Now receive the token with our specified output amounts
+      console.log("Receiving token with unit denominations...");
+      const proofs = await wallet.receive(decodedToken, receiveOptions);
+
+      // Log the result for debugging
+      console.log("Token receive result - proofs array:", proofs);
+      console.log(
+        "Number of proofs received:",
+        Array.isArray(proofs) ? proofs.length : "Not an array",
+      );
+
+      // Check if we received valid proofs
+      if (Array.isArray(proofs) && proofs.length > 0) {
+        // Update keyset counter after receiving tokens
+        let keyset_counts = getKeysetCounts();
+        let keyset_count = keyset_counts[matchingKeyset.id] || 0;
+        let new_count = keyset_count + proofs.length;
+        keyset_counts[matchingKeyset.id] = new_count;
+        setKeysetCounts(keyset_counts);
+
+        // Check proof state and save to storage
+        await checkProofState(proofs);
+
         // Calculate total amount redeemed
-        const totalAmount = result.proofs.reduce((sum, proof) => sum + (proof.amount || 0), 0);
-        
+        const totalAmount = proofs.reduce(
+          (sum, proof) => sum + (proof.amount || 0),
+          0,
+        );
+
+        // Verify all proofs have value 1
+        const allUnit = proofs.every((proof) => proof.amount === 1);
+        console.log("All proofs have unit value:", allUnit);
+
         // Show success message
-        showToast(`Redeemed ${result.proofs.length} proofs (${totalAmount} sats)`, 5000);
-        
+        showToast(
+          `Redeemed ${proofs.length} proofs (${totalAmount} sats)`,
+          5000,
+        );
+
         // Clear input and any errors
         tokenInput = "";
         tokenError = "";
-        
+
         // Navigate to home page after a short delay
         setTimeout(() => {
-          goto('/');
+          goto("/");
         }, 1000);
       } else {
-        tokenError = "Invalid or spent token";
-        showToast("Invalid or spent token", 3000);
+        console.error("Received invalid result from wallet.receive", proofs);
+        tokenError = "Failed to process token. No valid proofs received.";
+        showToast(tokenError, 3000);
       }
     } catch (error) {
       console.error("Token redemption error:", error);
-      tokenError = `Failed to redeem token: ${error.message}`;
-      showToast(`Token redemption failed: ${error.message}`, 5000);
+
+      // Provide more helpful error messages based on the error type
+      if (
+        error.message?.includes("Invalid token") ||
+        error.message?.includes("Token version")
+      ) {
+        tokenError =
+          "Invalid token format. Please check that you've entered a valid Cashu token.";
+      } else if (error.message?.includes("Token is not supported")) {
+        tokenError = "This token format is not supported.";
+      } else if (error.message?.includes("spent")) {
+        tokenError = "This token has already been spent.";
+      } else {
+        tokenError = `Failed to redeem token: ${error.message}`;
+      }
+
+      showToast(tokenError, 5000);
     } finally {
       // Reset loading state when complete or on error
       tokenRestoring = false;
@@ -251,16 +388,23 @@
 
 <svelte:head>
   <title>Athenut</title>
-  <meta name="description" content="privacy-preserving web search powered by Kagi and Cashu." />
+  <meta
+    name="description"
+    content="privacy-preserving web search powered by Kagi and Cashu."
+  />
 </svelte:head>
 
 <div
   class="min-h-screen flex flex-col text-gray-800 bg-white relative dark:bg-[var(--bg-primary)] dark:text-white"
 >
   <Navbar />
-  
-  <main class="flex-grow flex flex-col justify-start items-center px-4 py-8 dark:bg-[var(--bg-primary)]">
-    <h1 class="text-4xl font-bold mb-2 text-center text-gray-800 dark:text-white">
+
+  <main
+    class="flex-grow flex flex-col justify-start items-center px-4 py-8 dark:bg-[var(--bg-primary)]"
+  >
+    <h1
+      class="text-4xl font-bold mb-2 text-center text-gray-800 dark:text-white"
+    >
       Recovery
     </h1>
 
@@ -309,11 +453,16 @@
     <div class="divider my-8">OR</div>
 
     <div class="token-section w-full max-w-800px flex flex-col items-center">
-      <h2 class="text-2xl font-bold mb-4 text-center text-gray-800 dark:text-white">
+      <h2
+        class="text-2xl font-bold mb-4 text-center text-gray-800 dark:text-white"
+      >
         Redeem Search Token
       </h2>
-      
-      <div class="token-input-container seed-container" style="display: block; padding: 1rem;">
+
+      <div
+        class="token-input-container seed-container"
+        style="display: block; padding: 1rem;"
+      >
         <input
           type="text"
           class="word-text"
@@ -324,21 +473,27 @@
           <p class="text-red-500 mt-2 text-center">{tokenError}</p>
         {/if}
       </div>
-      
-      <button class="recovery-button-secondary mb-4" on:click={async () => {
-        try {
-          tokenInput = await navigator.clipboard.readText();
-          tokenError = "";
-        } catch (error) {
-          tokenError = "Unable to access clipboard. Please grant clipboard permission.";
-          console.error("Clipboard error:", error);
-        }
-      }}>
+
+      <button
+        class="recovery-button-secondary mb-4"
+        on:click={async () => {
+          try {
+            tokenInput = await navigator.clipboard.readText();
+            tokenError = "";
+          } catch (error) {
+            tokenError =
+              "Unable to access clipboard. Please grant clipboard permission.";
+            console.error("Clipboard error:", error);
+          }
+        }}
+      >
         Paste Search Token
       </button>
 
       <button
-        class="recovery-button mt-4 {!tokenInput.trim() || tokenRestoring ? 'disabled' : ''}"
+        class="recovery-button mt-4 {!tokenInput.trim() || tokenRestoring
+          ? 'disabled'
+          : ''}"
         on:click={handleTokenRedeem}
         disabled={!tokenInput.trim() || tokenRestoring}
       >
@@ -677,12 +832,13 @@
 
   /* Remove or modify these styles that might be affecting the text color */
   :global(.dark) h1 {
-    color: #ffffff;  /* Only apply this in dark mode */
+    color: #ffffff; /* Only apply this in dark mode */
   }
 
   /* Add explicit light mode styles */
-  h1, h2 {
-    color: #1f2937;  /* gray-800 */
+  h1,
+  h2 {
+    color: #1f2937; /* gray-800 */
   }
 
   /* Keep dark mode styles */
@@ -693,12 +849,12 @@
 
   /* Restore original dark mode styles */
   :global(.dark) .underline {
-    background: #4B5563;
+    background: #4b5563;
   }
 
   :global(.dark) .divider::before,
   :global(.dark) .divider::after {
-    background: #4B5563;
+    background: #4b5563;
   }
 
   :global(.dark) .divider {
@@ -722,14 +878,18 @@
   }
 
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 
   .ml-2 {
     margin-left: 0.5rem;
   }
-  
+
   /* Dark mode spinner */
   :global(.dark) .spinner {
     border: 2px solid rgba(255, 255, 255, 0.1);

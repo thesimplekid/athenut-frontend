@@ -5,10 +5,12 @@
   import { showToast } from "$lib/stores/toast";
   import Toast from "../../components/Toast.svelte";
   import seed from "$lib/shared/store/wallet";
+  import mint_url from "$lib/shared/store/mint_url";
   import { onMount } from "svelte";
   import { theme } from "$lib/stores/theme";
   import Navbar from "../../components/Navbar.svelte";
   import { getBalance, debugProofs, getProofs, forceBalanceRefresh } from "$lib/shared/utils";
+  import { getEncodedTokenV4 } from "@cashu/cashu-ts";
 
   // Sample words (these should come from your app's logic later)
   const words = $seed.trim().split(/\s+/);
@@ -16,6 +18,8 @@
   let isBlurred = true;
   // Initialize balance
   let balance = 0;
+  // Initialize encoded token
+  let encodedToken = "";
 
   function toggleBlur() {
     isBlurred = !isBlurred;
@@ -24,6 +28,35 @@
   function handleCopyPhrase() {
     copyToClipboard($seed);
     showToast("Recovery phrase copied to clipboard.");
+  }
+
+  /**
+   * Generate a Cashu token containing all proofs in the wallet with amount = 1
+   */
+  function generateToken() {
+    try {
+      // Get all proofs from the wallet
+      const proofs = getProofs();
+      
+      // Filter to only include proofs with amount = 1
+      const filteredProofs = proofs.filter(proof => proof.amount === 1);
+      
+      // Create a token object using the correct format for cashu-ts
+      const token = {
+        mint: $mint_url,
+        proofs: filteredProofs,
+        unit: "XSR"
+      };
+      
+      // Encode the token
+      const encoded = getEncodedTokenV4(token);
+      
+      return encoded;
+    } catch (error) {
+      console.error("Error generating token:", error);
+      showToast("Failed to generate token: " + error.message);
+      return "";
+    }
   }
 
   onMount(async () => {
@@ -43,12 +76,17 @@
     const proofs = getProofs();
     console.log('Actual proofs array:', proofs);
     
+    // Generate encoded token
+    encodedToken = generateToken();
+    
     // Create the storage event handler
     const handleStorageChange = (e) => {
       if (e.key === 'proofs') {
         console.log('Storage event - proofs changed');
         balance = forceBalanceRefresh();
         console.log('Updated balance:', balance);
+        // Update the token when proofs change
+        encodedToken = generateToken();
       }
     };
     
@@ -177,22 +215,34 @@
       <div class="token-input-container seed-container" style="display: block; padding: 1rem;">
         <input
           type="text"
-          value="FAKETOKEN"
+          bind:value={encodedToken}
           class="word-text"
           readonly
           class:blurred={isBlurred}
         />
       </div>
       
-      <button 
-        class="recovery-button-secondary mb-4" 
-        on:click={() => {
-          copyToClipboard("FAKETOKEN");
-          showToast("Token copied to clipboard");
-        }}
-      >
-        Copy Token
-      </button>
+      <div class="button-row">
+        <button 
+          class="recovery-button-secondary mb-4" 
+          on:click={() => {
+            copyToClipboard(encodedToken);
+            showToast("Token copied to clipboard");
+          }}
+        >
+          Copy Token
+        </button>
+        
+        <button 
+          class="recovery-button-secondary mb-4" 
+          on:click={() => {
+            encodedToken = generateToken();
+            showToast("Token refreshed");
+          }}
+        >
+          Refresh Token
+        </button>
+      </div>
     </div>
   </main>
 
@@ -487,5 +537,27 @@
 
   :global(.dark) .underline {
     background: #4B5563;
+  }
+  
+  /* Button row styling */
+  .button-row {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    justify-content: center;
+    width: 100%;
+    max-width: 800px;
+  }
+  
+  @media (max-width: 640px) {
+    .button-row {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .recovery-button-secondary {
+      font-size: 16px;
+      padding: 12px 24px;
+    }
   }
 </style>
