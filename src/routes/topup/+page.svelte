@@ -1,4 +1,6 @@
 <script>
+  // This implementation strictly enforces using only proofs with denomination 1 for all operations
+  // by explicitly setting outputAmounts.sendAmounts to be an array of 1's when minting proofs
   import { onMount } from "svelte";
   import SvgQR from "@svelte-put/qr/svg/QR.svelte";
   import { copyToClipboard } from "@svelte-put/copy";
@@ -58,40 +60,40 @@
 
   onMount(async () => {
     // Debug the proofs to see what's going on
-    console.log('Topup Page - onMount');
+    console.log("Topup Page - onMount");
     debugProofs();
-    
+
     // Initialize the wallet balance - use both approaches
     balance = await getBalance();
-    console.log('Balance after getBalance():', balance);
-    
+    console.log("Balance after getBalance():", balance);
+
     // Force a direct refresh from localStorage
     balance = forceBalanceRefresh();
-    console.log('Balance after forceBalanceRefresh():', balance);
-    
+    console.log("Balance after forceBalanceRefresh():", balance);
+
     // Log the actual proofs for debugging
     const proofs = getProofs();
-    console.log('Actual proofs array:', proofs);
-    
+    console.log("Actual proofs array:", proofs);
+
     if ($mint_url != undefined) {
       await getInfo();
     }
-    
+
     // Create the storage event handler
     const handleStorageChange = (e) => {
-      if (e.key === 'proofs') {
-        console.log('Storage event - proofs changed');
+      if (e.key === "proofs") {
+        console.log("Storage event - proofs changed");
         balance = forceBalanceRefresh();
-        console.log('Updated balance:', balance);
+        console.log("Updated balance:", balance);
       }
     };
-    
+
     // Add storage listener to update balance when proofs change
-    window.addEventListener('storage', handleStorageChange);
-    
+    window.addEventListener("storage", handleStorageChange);
+
     return () => {
       // Clean up event listener when component is destroyed
-      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener("storage", handleStorageChange);
     };
   });
 
@@ -123,64 +125,80 @@
 
     // We need to create a seed that's between 128 and 512 bits (16-64 bytes)
     // The ideal is 256 bits (32 bytes) according to the error message
-    
+
     // Method 1: Derive a 256-bit (32 byte) seed from the string using a hash function
     // We'll use subtle crypto to hash the seed string to get a 32-byte value
     let seedBuffer;
-    
+
     try {
       // Try to create a proper length seed using a hash of the string
-      if (typeof seed === 'string') {
+      if (typeof seed === "string") {
         // Convert the string to an ArrayBuffer first
         const encoder = new TextEncoder();
         const data = encoder.encode(seed);
-        
+
         // Use SHA-256 to get a 32-byte (256-bit) result
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashBuffer = await crypto.subtle.digest("SHA-256", data);
         seedBuffer = new Uint8Array(hashBuffer);
-        
-        console.log('Created 256-bit seed from hash, length:', seedBuffer.length * 8, 'bits');
+
+        console.log(
+          "Created 256-bit seed from hash, length:",
+          seedBuffer.length * 8,
+          "bits",
+        );
       } else if (seed instanceof Uint8Array) {
         // If it's already a Uint8Array, but not the right size, hash it
         if (seed.length < 16 || seed.length > 64) {
-          const hashBuffer = await crypto.subtle.digest('SHA-256', seed);
+          const hashBuffer = await crypto.subtle.digest("SHA-256", seed);
           seedBuffer = new Uint8Array(hashBuffer);
-          console.log('Hashed existing Uint8Array to proper size');
+          console.log("Hashed existing Uint8Array to proper size");
         } else {
           // It's already the right size
           seedBuffer = seed;
-          console.log('Using existing properly sized Uint8Array seed');
+          console.log("Using existing properly sized Uint8Array seed");
         }
       } else {
         // Fallback to a hard-coded seed if all else fails
         // Create a seed with 32 bytes (256 bits) - filled with values derived from a fixed string
         // This is not ideal for security but ensures the app doesn't crash
-        console.warn('No valid seed provided, creating backup deterministic seed');
-        const backupSeed = 'xCashuAppDefaultSeedPleaseReplaceWithYourOwn';
+        console.warn(
+          "No valid seed provided, creating backup deterministic seed",
+        );
+        const backupSeed = "xCashuAppDefaultSeedPleaseReplaceWithYourOwn";
         const encoder = new TextEncoder();
         const data = encoder.encode(backupSeed);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashBuffer = await crypto.subtle.digest("SHA-256", data);
         seedBuffer = new Uint8Array(hashBuffer);
       }
-      
-      console.log('Final seed buffer type:', seedBuffer.constructor.name);
-      console.log('Final seed buffer length in bytes:', seedBuffer.length, '(' + (seedBuffer.length * 8) + ' bits)');
+
+      console.log("Final seed buffer type:", seedBuffer.constructor.name);
+      console.log(
+        "Final seed buffer length in bytes:",
+        seedBuffer.length,
+        "(" + seedBuffer.length * 8 + " bits)",
+      );
     } catch (error) {
-      console.error('Error creating seed buffer:', error);
+      console.error("Error creating seed buffer:", error);
       // Create a fallback seed using a simpler method if crypto.subtle fails
       // This repeats the seed string to reach the required length
-      let seedStr = typeof seed === 'string' ? seed : 'fallbackseed';
+      let seedStr = typeof seed === "string" ? seed : "fallbackseed";
       while (seedStr.length < 32) seedStr += seedStr;
       seedBuffer = new TextEncoder().encode(seedStr.substring(0, 32));
-      console.log('Using fallback seed generation method, length:', seedBuffer.length, 'bytes');
+      console.log(
+        "Using fallback seed generation method, length:",
+        seedBuffer.length,
+        "bytes",
+      );
     }
-    
+
     // Create the wallet with the bip39seed parameter
     const wallet = new CashuWallet(mint, {
       unit: "xsr",
       keys: matchingKeyset,
       // Use the properly sized seed
-      bip39seed: seedBuffer
+      bip39seed: seedBuffer,
+      // Note: We don't need to set preferredDenominations or denominationTarget here
+      // because we'll be explicitly setting outputAmounts in mintProofs options
     });
 
     return { wallet, keys: wallet.keys };
@@ -196,7 +214,10 @@
 
       try {
         // Pass the $seed value from the store to the function
-        console.log('Initializing wallet with seed:', $seed ? $seed.substring(0, 3) + '...' : 'undefined');
+        console.log(
+          "Initializing wallet with seed:",
+          $seed ? $seed.substring(0, 3) + "..." : "undefined",
+        );
         const { wallet, keys } = await initializeWallet($mint_url, $seed);
 
         // Create the mint quote
@@ -226,26 +247,39 @@
         if (mintQuoteChecked.state === MintQuoteState.PAID) {
           let keyset_counts = getKeysetCounts();
           let keyset_count = keyset_counts[keys.id] || 0;
-          console.log('Using keyset count:', keyset_count);
+          console.log("Using keyset count:", keyset_count);
 
           const options = {
-            // In cashu-ts v2, preference is now outputAmounts with sendAmounts and keepAmounts arrays
+            // Set outputAmounts to ensure only denomination 1 proofs
             outputAmounts: {
-              sendAmounts: Array(searches).fill(1) // Creates an array of 1's with length of 'searches'
+              // Create an array of 1's with length equal to the amount being minted
+              sendAmounts: Array(searches).fill(1),
+              keepAmounts: Array(searches).fill(1),
             },
             keysetId: keys.id,
-            counter: keyset_count, // Important: this is the counter parameter that will be used
+            counter: keyset_count, // Counter for blind signatures
+            // Not using these options for basic minting:
+            // outputData: undefined,  // For additional data
+            // p2pk: undefined,        // For P2PK locks
+            // proofsWeHave: undefined, // For splitting existing proofs
+            // pubkey: undefined        // For pubkey operations
           };
 
-          console.log('Minting proofs with options:', JSON.stringify(options));
+          console.log("Minting proofs with options:", JSON.stringify(options));
           // In cashu-ts v2, mintTokens is now mintProofs and returns proofs directly, not in an object
           const proofs = await wallet.mintProofs(
             searches,
             mintQuote.quote,
             options,
           );
-          
-          console.log('Successfully minted proofs:', proofs.length);
+
+          console.log("Successfully minted proofs:", proofs.length);
+          // Verify that all proofs have a denomination of 1
+          const allDenom1 = proofs.every((proof) => proof.amount === 1);
+          console.log("All proofs have denomination 1:", allDenom1);
+          if (!allDenom1) {
+            console.warn("Warning: Some proofs do not have denomination 1");
+          }
           let new_count = keyset_count + proofs.length;
           keyset_counts[keys.id] = new_count;
           setKeysetCounts(keyset_counts);
@@ -254,26 +288,34 @@
           const combinedList = [...current_proofs, ...proofs];
           writeProofs(combinedList);
           updateQuoteState(mintQuote.quote, "paid");
-          
+
           // Update the balance right after proofs are written
           balance = forceBalanceRefresh();
-          console.log('Updated balance after mintProofs:', balance);
-          
+          console.log("Updated balance after mintProofs:", balance);
+
           pendingInvoices = getPendingQuotes();
           goto("/");
         }
       } catch (error) {
         console.error("Error details:", error);
-        
-        if (error.message?.toLowerCase().includes("cannot create deterministic messages without seed")) {
+
+        if (
+          error.message
+            ?.toLowerCase()
+            .includes("cannot create deterministic messages without seed")
+        ) {
           // Handle the specific error we're fixing
-          showToast("Wallet initialization error. Please refresh the page and try again.");
-          console.error("Seed format issue - this should be fixed with our code update.");
+          showToast(
+            "Wallet initialization error. Please refresh the page and try again.",
+          );
+          console.error(
+            "Seed format issue - this should be fixed with our code update.",
+          );
         } else {
           // For any other error
           showToast("Error topping up: " + (error.message || "Unknown error"));
         }
-        
+
         console.error("Error while topping up: ", error);
       }
     }
@@ -284,7 +326,7 @@
    * @param {string} quoteId
    */
   async function handleRefresh(quoteId) {
-    console.log('Refreshing quote:', quoteId);
+    console.log("Refreshing quote:", quoteId);
     let mintQuote = pendingInvoices.find((quote) => quote.id === quoteId);
     if (!mintQuote) {
       throw new Error("Could not find mint quote");
@@ -298,45 +340,56 @@
 
     try {
       // Pass the $seed value from the store to the function
-      console.log('Initializing wallet with seed:', $seed ? $seed.substring(0, 3) + '...' : 'undefined');
+      console.log(
+        "Initializing wallet with seed:",
+        $seed ? $seed.substring(0, 3) + "..." : "undefined",
+      );
       const { wallet, keys } = await initializeWallet($mint_url, $seed);
       let keyset_counts = getKeysetCounts();
       let keyset_count = keyset_counts[keys.id] || 0;
-      console.log('Using keyset count:', keyset_count);
-      
+      console.log("Using keyset count:", keyset_count);
+
       const options = {
-        // In cashu-ts v2, preference is now outputAmounts with sendAmounts and keepAmounts arrays
+        // Set outputAmounts to ensure only denomination 1 proofs
         outputAmounts: {
-          sendAmounts: Array(mintQuote.amount).fill(1) // Array of 1's with length of 'mintQuote.amount'
+          // Create an array of 1's with length equal to the amount being minted
+          sendAmounts: Array(mintQuote.amount).fill(1),
         },
         keysetId: keys.id,
-        counter: keyset_count, // Important: this is the counter parameter that will be used
+        counter: keyset_count, // Counter for blind signatures
+        // Not using these options for basic minting:
+        // outputData: undefined,  // For additional data
+        // p2pk: undefined,        // For P2PK locks
+        // proofsWeHave: undefined, // For splitting existing proofs
+        // pubkey: undefined        // For pubkey operations
       };
-      
-      console.log('Minting proofs with options:', JSON.stringify(options));
+
+      console.log("Minting proofs with options:", JSON.stringify(options));
       // In cashu-ts v2, mintTokens is now mintProofs and returns proofs directly, not in an object
-      let proofs = await wallet.mintProofs(
-        mintQuote.amount,
-        quoteId,
-        options,
-      );
-      
-      console.log('Successfully minted proofs:', proofs.length);
+      let proofs = await wallet.mintProofs(mintQuote.amount, quoteId, options);
+
+      console.log("Successfully minted proofs:", proofs.length);
+      // Verify that all proofs have a denomination of 1
+      const allDenom1 = proofs.every((proof) => proof.amount === 1);
+      console.log("All proofs have denomination 1:", allDenom1);
+      if (!allDenom1) {
+        console.warn("Warning: Some proofs do not have denomination 1");
+      }
       let new_count = keyset_count + proofs.length;
       keyset_counts[keys.id] = new_count;
       setKeysetCounts(keyset_counts);
-      
+
       let current_proofs = getProofs();
       const combinedList = [...current_proofs, ...proofs];
       writeProofs(combinedList);
       updateQuoteState(mintQuote.id, "paid");
-      
+
       // Update the balance right after proofs are written
       balance = forceBalanceRefresh();
-      console.log('Updated balance after handleRefresh:', balance);
+      console.log("Updated balance after handleRefresh:", balance);
     } catch (error) {
-      console.error('Error details:', error);
-      
+      console.error("Error details:", error);
+
       if (error.message?.toLowerCase().includes("expired")) {
         updateQuoteState(quoteId, "expired");
         showToast("Quote Expired");
@@ -360,21 +413,31 @@
         keyset_counts[keys.id] = new_count;
         setKeysetCounts(keyset_counts);
         showToast("Error minting, please try again");
-      } else if (error.message?.toLowerCase().includes("cannot create deterministic messages without seed")) {
+      } else if (
+        error.message
+          ?.toLowerCase()
+          .includes("cannot create deterministic messages without seed")
+      ) {
         // Handle the specific error we're fixing
-        showToast("Wallet initialization error. Please refresh the page and try again.");
-        console.error("Seed format issue - this should be fixed with our code update.");
+        showToast(
+          "Wallet initialization error. Please refresh the page and try again.",
+        );
+        console.error(
+          "Seed format issue - this should be fixed with our code update.",
+        );
       } else {
         // For any other error
-        showToast("Error refreshing quote: " + (error.message || "Unknown error"));
+        showToast(
+          "Error refreshing quote: " + (error.message || "Unknown error"),
+        );
       }
-      
+
       console.error("Error while refreshing quote: ", error);
     } finally {
       // Always update pending invoices and balance
       pendingInvoices = getPendingQuotes();
       balance = forceBalanceRefresh();
-      console.log('Final balance after handleRefresh:', balance);
+      console.log("Final balance after handleRefresh:", balance);
 
       // Always remove spinning class after a delay
       if (button) {
@@ -430,11 +493,16 @@
 
 <svelte:head>
   <title>Athenut</title>
-  <meta name="description" content="privacy-preserving web search powered by Kagi and Cashu." />
+  <meta
+    name="description"
+    content="privacy-preserving web search powered by Kagi and Cashu."
+  />
 </svelte:head>
 
 <!-- Update the main container div and add Navbar -->
-<div class="min-h-screen flex flex-col text-gray-800 bg-white dark:bg-[var(--bg-primary)] dark:text-white">
+<div
+  class="min-h-screen flex flex-col text-gray-800 bg-white dark:bg-[var(--bg-primary)] dark:text-white"
+>
   <Navbar />
   <main class="flex-grow flex flex-col justify-start items-center px-4 py-8">
     <div class="header-container">
@@ -445,25 +513,27 @@
 
     <div class="text-2xl font-semibold text-gray-900 dark:text-white mt-2 mb-4">
       You have {balance} searches left
-      <button 
+      <button
         class="refresh-balance-button"
         on:click={() => {
           balance = forceBalanceRefresh();
-          console.log('Balance refreshed manually:', balance);
+          console.log("Balance refreshed manually:", balance);
         }}
       >
         <svg
-          xmlns="http://www.w3.org/2000/svg" 
-          width="16" 
-          height="16" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          stroke-width="2" 
-          stroke-linecap="round" 
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          <path
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          />
         </svg>
       </button>
     </div>
@@ -1019,7 +1089,8 @@
 
   :global(.dark-mode) .copy-invoice-button:focus {
     outline: none;
-    box-shadow: 0 0 0 2px #1a1a1a,
+    box-shadow:
+      0 0 0 2px #1a1a1a,
       0 0 0 4px rgba(255, 255, 255, 0.5);
   }
 
@@ -1066,7 +1137,7 @@
   @media (max-width: 640px) {
     .transaction-row {
       grid-template-columns: 1fr 1fr; /* Reduce to 2 columns */
-      grid-template-areas: 
+      grid-template-areas:
         "amount status"
         "time actions";
       gap: 0.5rem;

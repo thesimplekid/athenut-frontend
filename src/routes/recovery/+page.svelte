@@ -40,7 +40,11 @@
       keys: matchingKeyset,
       // Try both parameter names that might be accepted
       seed: seedBuffer,
-      bip39seed: seedBuffer
+      bip39seed: seedBuffer,
+      // Configure wallet to only use denomination 1
+      preferredDenominations: [1],
+      // Set denomination target to 1 to ensure we only use denomination 1
+      denominationTarget: 1
     });
     return wallet;
   }
