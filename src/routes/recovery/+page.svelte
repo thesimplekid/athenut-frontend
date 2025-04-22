@@ -94,6 +94,7 @@
       errorMessage = "";
       
       // Set the seed value in the store
+      // This will automatically save the seed to local storage via the seed store subscription
       $seed = words.join(" ");
       
       // Initialize wallet with the proper seed
@@ -188,6 +189,7 @@
       tokenRestoring = true;
       tokenError = "";
 
+      // Initialize the wallet with the seed from local storage
       if (!wallet) {
         await initializeWallet();
       }

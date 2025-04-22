@@ -10,10 +10,12 @@ function generateWalletMnemonic() {
 
 const defaultValue = generateWalletMnemonic();
 /** @type {String} */
+// Initialize with seed from localStorage or generate a new one if not found
 const initialValue = browser ? window.localStorage.getItem('seed') ?? defaultValue : defaultValue;
 
 const seed = writable(initialValue);
 
+// Subscribe to seed changes and automatically save to local storage
 seed.subscribe((value) => {
 	if (browser) {
 		window.localStorage.setItem('seed', value);

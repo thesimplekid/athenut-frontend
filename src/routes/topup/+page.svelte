@@ -25,8 +25,15 @@
   import { showToast } from "$lib/stores/toast";
   import Toast from "../../components/Toast.svelte";
   import seed from "$lib/shared/store/wallet";
+  import { generateMnemonic } from "@scure/bip39";
+  import { wordlist } from "@scure/bip39/wordlists/english";
   import { theme } from "$lib/stores/theme";
   import Navbar from "../../components/Navbar.svelte";
+
+  // Function to generate a mnemonic (matching the one in wallet.js)
+  function generateWalletMnemonic() {
+    return generateMnemonic(wordlist);
+  }
 
   // AmountPreference type has been removed in cashu-ts v2
 
@@ -115,7 +122,7 @@
   /**
    * Creates and initializes a Cashu wallet
    * @param {string} mintUrl - The URL of the mint
-   * @param {string} seed - The wallet seed
+   * @param {string} seed - The wallet seed (mnemonic string)
    * @returns {Promise<{wallet: CashuWallet, keys: any}>} The initialized wallet and its keys
    */
   async function initializeWallet(mintUrl, seed) {
@@ -123,82 +130,25 @@
     const keysets = await mint.getKeys();
     const matchingKeyset = keysets.keysets.find((key) => key.unit === "xsr");
 
-    // We need to create a seed that's between 128 and 512 bits (16-64 bytes)
-    // The ideal is 256 bits (32 bytes) according to the error message
-
-    // Method 1: Derive a 256-bit (32 byte) seed from the string using a hash function
-    // We'll use subtle crypto to hash the seed string to get a 32-byte value
-    let seedBuffer;
-
-    try {
-      // Try to create a proper length seed using a hash of the string
-      if (typeof seed === "string") {
-        // Convert the string to an ArrayBuffer first
-        const encoder = new TextEncoder();
-        const data = encoder.encode(seed);
-
-        // Use SHA-256 to get a 32-byte (256-bit) result
-        const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-        seedBuffer = new Uint8Array(hashBuffer);
-
-        console.log(
-          "Created 256-bit seed from hash, length:",
-          seedBuffer.length * 8,
-          "bits",
-        );
-      } else if (seed instanceof Uint8Array) {
-        // If it's already a Uint8Array, but not the right size, hash it
-        if (seed.length < 16 || seed.length > 64) {
-          const hashBuffer = await crypto.subtle.digest("SHA-256", seed);
-          seedBuffer = new Uint8Array(hashBuffer);
-          console.log("Hashed existing Uint8Array to proper size");
-        } else {
-          // It's already the right size
-          seedBuffer = seed;
-          console.log("Using existing properly sized Uint8Array seed");
-        }
-      } else {
-        // Fallback to a hard-coded seed if all else fails
-        // Create a seed with 32 bytes (256 bits) - filled with values derived from a fixed string
-        // This is not ideal for security but ensures the app doesn't crash
-        console.warn(
-          "No valid seed provided, creating backup deterministic seed",
-        );
-        const backupSeed = "xCashuAppDefaultSeedPleaseReplaceWithYourOwn";
-        const encoder = new TextEncoder();
-        const data = encoder.encode(backupSeed);
-        const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-        seedBuffer = new Uint8Array(hashBuffer);
-      }
-
-      console.log("Final seed buffer type:", seedBuffer.constructor.name);
-      console.log(
-        "Final seed buffer length in bytes:",
-        seedBuffer.length,
-        "(" + seedBuffer.length * 8 + " bits)",
-      );
-    } catch (error) {
-      console.error("Error creating seed buffer:", error);
-      // Create a fallback seed using a simpler method if crypto.subtle fails
-      // This repeats the seed string to reach the required length
-      let seedStr = typeof seed === "string" ? seed : "fallbackseed";
-      while (seedStr.length < 32) seedStr += seedStr;
-      seedBuffer = new TextEncoder().encode(seedStr.substring(0, 32));
-      console.log(
-        "Using fallback seed generation method, length:",
-        seedBuffer.length,
-        "bytes",
-      );
-    }
+    // Convert the seed string (mnemonic) to a 256-bit seed using SHA-256
+    const encoder = new TextEncoder();
+    const data = encoder.encode(seed);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const seedBuffer = new Uint8Array(hashBuffer);
+    
+    console.log('Seed buffer created with length:', seedBuffer.length, 'bytes');
 
     // Create the wallet with the bip39seed parameter
     const wallet = new CashuWallet(mint, {
       unit: "xsr",
       keys: matchingKeyset,
       // Use the properly sized seed
+      seed: seedBuffer,
       bip39seed: seedBuffer,
-      // Note: We don't need to set preferredDenominations or denominationTarget here
-      // because we'll be explicitly setting outputAmounts in mintProofs options
+      // Configure wallet to only use denomination 1
+      preferredDenominations: [1],
+      // Set denomination target to 1 to ensure we only use denomination 1
+      denominationTarget: 1
     });
 
     return { wallet, keys: wallet.keys };
@@ -211,9 +161,16 @@
     if (mint_url != null) {
       console.log("Attempting to top up for searches ", searches);
       selectedSearches = searches;
+      isLoading = true;
 
       try {
-        // Pass the $seed value from the store to the function
+        // Check if we need to generate a seed
+        if (!$seed) {
+          console.log("No seed found, generating new mnemonic...");
+          $seed = generateWalletMnemonic();
+          console.log("Generated new seed (mnemonic)");
+        }
+
         console.log(
           "Initializing wallet with seed:",
           $seed ? $seed.substring(0, 3) + "..." : "undefined",
@@ -339,7 +296,13 @@
     }
 
     try {
-      // Pass the $seed value from the store to the function
+      // Check if we need to generate a seed
+      if (!$seed) {
+        console.log("No seed found, generating new mnemonic...");
+        $seed = generateWalletMnemonic();
+        console.log("Generated new seed (mnemonic)");
+      }
+
       console.log(
         "Initializing wallet with seed:",
         $seed ? $seed.substring(0, 3) + "..." : "undefined",
@@ -404,8 +367,12 @@
       } else if (error.message?.toLowerCase().includes("already signed")) {
         // HACK: Make this smarter
         console.log("Already signed");
-        // Pass the $seed value from the store to the function
-        // This uses the same proper seed generation as the main wallet initialization
+        // Use the same generateWalletMnemonic if needed
+        if (!$seed) {
+          console.log("No seed found, generating new mnemonic...");
+          $seed = generateWalletMnemonic();
+          console.log("Generated new seed (mnemonic)");
+        }
         const { wallet, keys } = await initializeWallet($mint_url, $seed);
         let keyset_counts = getKeysetCounts();
         let keyset_count = keyset_counts[keys.id] || 0;
