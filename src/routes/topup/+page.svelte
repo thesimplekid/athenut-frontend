@@ -473,12 +473,12 @@
   <Navbar />
   <main class="flex-grow flex flex-col justify-start items-center px-4 py-8 bg-white dark:bg-[var(--bg-primary)]">
     <div class="header-container">
-      <h1 class="text-4xl font-bold mb-2 text-gray-800 dark:text-white">
+      <h1 class="text-4xl font-bold mb-2 text-black dark:text-white">
         Top Up
       </h1>
     </div>
 
-    <div class="text-2xl font-semibold text-gray-900 dark:text-white mt-2 mb-4">
+    <div class="text-2xl font-semibold text-[#333333] dark:text-white mt-2 mb-4">
       You have {balance} searches left
       <button
         class="refresh-balance-button"
@@ -505,7 +505,7 @@
       </button>
     </div>
 
-    <p class="text-xl text-gray-600 mb-6">
+    <p class="text-xl text-[#4b5563] dark:text-[#a0aec0] mb-6">
       Zap your account with sats to unlock more premium searches.
     </p>
 
@@ -784,7 +784,7 @@
     margin-bottom: 1rem;
     font-size: 1.2rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: #333333;
   }
 
   /* Dark mode styles */

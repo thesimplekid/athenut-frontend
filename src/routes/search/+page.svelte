@@ -99,13 +99,9 @@
     try {
       /** @type {import("@cashu/cashu-ts").Token} */
       let token = {
-        token: [
-          {
-            mint: $mint_url,
-            proofs: [proof],
-          },
-        ],
-        unit: "XSR",
+        mint: $mint_url,
+        proofs: [proof],
+        unit: "XSR"
       };
 
       let encoded_token = getEncodedTokenV4(token);
