@@ -15,6 +15,8 @@
   let errorMessage = "";
   let tokenInput = "";
   let tokenError = "";
+  let isRestoring = false; // Track if wallet restoration is in progress
+  let tokenRestoring = false; // Track if token redemption is in progress
 
   /** @type {CashuWallet|null} */
   let wallet = null;
@@ -87,6 +89,10 @@
 
   async function handleRestore() {
     try {
+      // Set the restoration state to true to show the loading spinner
+      isRestoring = true;
+      errorMessage = "";
+      
       // Set the seed value in the store
       $seed = words.join(" ");
       
@@ -147,6 +153,9 @@
       
       // Show error in toast as well
       showToast(`Restore failed: ${error.message}`, 5000);
+    } finally {
+      // Reset the loading state when complete or on error
+      isRestoring = false;
     }
   }
 
@@ -174,6 +183,10 @@
         tokenError = "Please enter a valid token";
         return;
       }
+
+      // Set loading state to true
+      tokenRestoring = true;
+      tokenError = "";
 
       if (!wallet) {
         await initializeWallet();
@@ -212,6 +225,9 @@
       console.error("Token redemption error:", error);
       tokenError = `Failed to redeem token: ${error.message}`;
       showToast(`Token redemption failed: ${error.message}`, 5000);
+    } finally {
+      // Reset loading state when complete or on error
+      tokenRestoring = false;
     }
   }
 
@@ -274,11 +290,18 @@
     </button>
 
     <button
-      class="recovery-button {!isComplete ? 'disabled' : ''}"
+      class="recovery-button {!isComplete || isRestoring ? 'disabled' : ''}"
       on:click={handleRestore}
-      disabled={!isComplete}
+      disabled={!isComplete || isRestoring}
     >
-      Restore Wallet
+      {#if isRestoring}
+        <div class="spinner-container">
+          <div class="spinner"></div>
+          <span class="ml-2">Restoring...</span>
+        </div>
+      {:else}
+        Restore Wallet
+      {/if}
     </button>
 
     <div class="divider my-8">OR</div>
@@ -313,11 +336,18 @@
       </button>
 
       <button
-        class="recovery-button mt-4 {!tokenInput.trim() ? 'disabled' : ''}"
+        class="recovery-button mt-4 {!tokenInput.trim() || tokenRestoring ? 'disabled' : ''}"
         on:click={handleTokenRedeem}
-        disabled={!tokenInput.trim()}
+        disabled={!tokenInput.trim() || tokenRestoring}
       >
-        Redeem Token
+        {#if tokenRestoring}
+          <div class="spinner-container">
+            <div class="spinner"></div>
+            <span class="ml-2">Redeeming...</span>
+          </div>
+        {:else}
+          Redeem Token
+        {/if}
       </button>
     </div>
   </main>
@@ -671,5 +701,36 @@
 
   :global(.dark) .divider {
     color: #6b7280;
+  }
+
+  /* Spinner styles */
+  .spinner-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .ml-2 {
+    margin-left: 0.5rem;
+  }
+  
+  /* Dark mode spinner */
+  :global(.dark) .spinner {
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-top: 2px solid white;
   }
 </style>
