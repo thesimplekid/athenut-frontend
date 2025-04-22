@@ -9,6 +9,7 @@
   import { onMount } from "svelte";
   import { theme } from "$lib/stores/theme";
   import Navbar from "../../components/Navbar.svelte";
+  import { showToast } from "$lib/stores/toast";
 
   let words = Array(12).fill("");
   let errorMessage = "";
@@ -97,6 +98,8 @@
       let empty_batches = 0;
       let start_counter = 0;
       let end_counter = 99;
+      let totalProofsRestored = 0;
+      let totalAmountRestored = 0;
 
       while (empty_batches < 3) {
         console.log("Restoring wallet with seed phrase");
@@ -105,6 +108,14 @@
         // Parameters: start, end, callback, secret_indices, customIds
         let restores = await wallet.restore(start_counter, end_counter, null, null, null);
         console.log("Received ", restores.proofs.length, " signatures from mint");
+        
+        if (restores.proofs.length > 0) {
+          // Calculate amount from this batch of proofs
+          const batchAmount = restores.proofs.reduce((sum, proof) => sum + (proof.amount || 0), 0);
+          totalAmountRestored += batchAmount;
+          totalProofsRestored += restores.proofs.length;
+        }
+        
         start_counter += 100;
         end_counter += 100;
         if (restores.proofs.length === 0) {
@@ -113,10 +124,25 @@
         await checkProofState(restores.proofs);
       }
       
-      console.log("Wallet restoration completed");
+      // Show success message with amount restored
+      if (totalProofsRestored > 0) {
+        showToast(`Restored ${totalProofsRestored} proofs (${totalAmountRestored} sats)`, 5000);
+        
+        // Navigate to home page after a short delay
+        setTimeout(() => {
+          goto('/');
+        }, 1000);
+      } else {
+        showToast("No proofs were found to restore", 3000);
+      }
+      
+      console.log(`Wallet restoration completed. Restored ${totalProofsRestored} proofs with ${totalAmountRestored} sats`);
     } catch (error) {
       console.error("Restore error:", error);
       errorMessage = `Failed to restore wallet: ${error.message}`;
+      
+      // Show error in toast as well
+      showToast(`Restore failed: ${error.message}`, 5000);
     }
   }
 
@@ -159,14 +185,29 @@
       // Check if the proofs were received successfully
       if (result.proofs && result.proofs.length > 0) {
         await checkProofState(result.proofs);
-        tokenInput = ""; // Clear the input
-        tokenError = ""; // Clear any errors
+        
+        // Calculate total amount redeemed
+        const totalAmount = result.proofs.reduce((sum, proof) => sum + (proof.amount || 0), 0);
+        
+        // Show success message
+        showToast(`Redeemed ${result.proofs.length} proofs (${totalAmount} sats)`, 5000);
+        
+        // Clear input and any errors
+        tokenInput = "";
+        tokenError = "";
+        
+        // Navigate to home page after a short delay
+        setTimeout(() => {
+          goto('/');
+        }, 1000);
       } else {
         tokenError = "Invalid or spent token";
+        showToast("Invalid or spent token", 3000);
       }
     } catch (error) {
       console.error("Token redemption error:", error);
-      tokenError = "Failed to redeem token. Please try again.";
+      tokenError = `Failed to redeem token: ${error.message}`;
+      showToast(`Token redemption failed: ${error.message}`, 5000);
     }
   }
 
