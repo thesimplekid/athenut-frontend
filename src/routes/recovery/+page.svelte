@@ -39,6 +39,18 @@
     let keysets = await mint.getKeys();
     let matchingKeyset = keysets.keysets.find((key) => key.unit === "xsr");
 
+    if (!matchingKeyset) {
+      console.error("No matching keyset found", keysets);
+      throw new Error("No matching keyset found");
+    }
+
+    // Log whether the keyset has an ID
+    if (!matchingKeyset.id) {
+      console.warn("Warning: The keyset is missing an ID", matchingKeyset);
+    } else {
+      console.log("Using keyset with id:", matchingKeyset.id);
+    }
+
     // Convert the seed string to a proper 256-bit seed using SHA-256
     const encoder = new TextEncoder();
     const data = encoder.encode($seed);
@@ -58,6 +70,7 @@
       // Set denomination target to 1 to ensure we only use denomination 1
       denominationTarget: 1,
     });
+    
     return wallet;
   }
 
@@ -307,10 +320,17 @@
       // Check if we received valid proofs
       if (Array.isArray(proofs) && proofs.length > 0) {
         // Update keyset counter after receiving tokens
+        if (!wallet) {
+          console.error("Wallet missing after receiving token", wallet);
+          throw new Error("Wallet invalid after token receive");
+        }
+        
+        // Get the stored counter, handling the case where keys.id might be undefined
         let keyset_counts = getKeysetCounts();
-        let keyset_count = keyset_counts[matchingKeyset.id] || 0;
+        const keysetId = wallet.keys && wallet.keys.id ? wallet.keys.id : "default";
+        let keyset_count = keyset_counts[keysetId] || 0;
         let new_count = keyset_count + proofs.length;
-        keyset_counts[matchingKeyset.id] = new_count;
+        keyset_counts[keysetId] = new_count;
         setKeysetCounts(keyset_counts);
 
         // Check proof state and save to storage

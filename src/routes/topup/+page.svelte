@@ -130,6 +130,18 @@
     const keysets = await mint.getKeys();
     const matchingKeyset = keysets.keysets.find((key) => key.unit === "xsr");
 
+    if (!matchingKeyset) {
+      console.error("No matching keyset found", keysets);
+      throw new Error("No matching keyset found");
+    }
+
+    // Log whether the keyset has an ID
+    if (!matchingKeyset.id) {
+      console.warn("Warning: The keyset is missing an ID", matchingKeyset);
+    } else {
+      console.log('Using keyset with id:', matchingKeyset.id);
+    }
+
     // Convert the seed string (mnemonic) to a 256-bit seed using SHA-256
     const encoder = new TextEncoder();
     const data = encoder.encode(seed);
@@ -151,7 +163,7 @@
       denominationTarget: 1
     });
 
-    return { wallet, keys: wallet.keys };
+    return { wallet, keys: matchingKeyset };
   }
 
   /**
@@ -203,9 +215,12 @@
 
         if (mintQuoteChecked.state === MintQuoteState.PAID) {
           let keyset_counts = getKeysetCounts();
-          let keyset_count = keyset_counts[keys.id] || 0;
-          console.log("Using keyset count:", keyset_count);
-
+          
+          // Get the stored counter, handling the case where keys.id might be undefined
+          const keysetId = keys && keys.id ? keys.id : "default";
+          let keyset_count = keyset_counts[keysetId] || 0;
+          console.log("Using keyset count:", keyset_count, "for keyset ID:", keysetId);
+          
           const options = {
             // Set outputAmounts to ensure only denomination 1 proofs
             outputAmounts: {
@@ -213,7 +228,7 @@
               sendAmounts: Array(searches).fill(1),
               keepAmounts: Array(searches).fill(1),
             },
-            keysetId: keys.id,
+            keysetId: keysetId, // Use the keyset ID if available, otherwise use "default"
             counter: keyset_count, // Counter for blind signatures
             // Not using these options for basic minting:
             // outputData: undefined,  // For additional data
@@ -237,8 +252,10 @@
           if (!allDenom1) {
             console.warn("Warning: Some proofs do not have denomination 1");
           }
+          
+          // Update the keyset count with how many proofs we created
           let new_count = keyset_count + proofs.length;
-          keyset_counts[keys.id] = new_count;
+          keyset_counts[keysetId] = new_count;
           setKeysetCounts(keyset_counts);
 
           let current_proofs = getProofs();
@@ -309,8 +326,11 @@
       );
       const { wallet, keys } = await initializeWallet($mint_url, $seed);
       let keyset_counts = getKeysetCounts();
-      let keyset_count = keyset_counts[keys.id] || 0;
-      console.log("Using keyset count:", keyset_count);
+      
+      // Get the stored counter, handling the case where keys.id might be undefined
+      const keysetId = keys && keys.id ? keys.id : "default";
+      let keyset_count = keyset_counts[keysetId] || 0;
+      console.log("Using keyset count:", keyset_count, "for keyset ID:", keysetId);
 
       const options = {
         // Set outputAmounts to ensure only denomination 1 proofs
@@ -318,7 +338,7 @@
           // Create an array of 1's with length equal to the amount being minted
           sendAmounts: Array(mintQuote.amount).fill(1),
         },
-        keysetId: keys.id,
+        keysetId: keysetId, // Use the keyset ID if available, otherwise use "default"
         counter: keyset_count, // Counter for blind signatures
         // Not using these options for basic minting:
         // outputData: undefined,  // For additional data
@@ -339,7 +359,7 @@
         console.warn("Warning: Some proofs do not have denomination 1");
       }
       let new_count = keyset_count + proofs.length;
-      keyset_counts[keys.id] = new_count;
+      keyset_counts[keysetId] = new_count;
       setKeysetCounts(keyset_counts);
 
       let current_proofs = getProofs();
@@ -374,10 +394,14 @@
           console.log("Generated new seed (mnemonic)");
         }
         const { wallet, keys } = await initializeWallet($mint_url, $seed);
+        
         let keyset_counts = getKeysetCounts();
-        let keyset_count = keyset_counts[keys.id] || 0;
+        
+        // Get the stored counter, handling the case where keys.id might be undefined
+        const keysetId = keys && keys.id ? keys.id : "default";
+        let keyset_count = keyset_counts[keysetId] || 0;
         let new_count = keyset_count + 10;
-        keyset_counts[keys.id] = new_count;
+        keyset_counts[keysetId] = new_count;
         setKeysetCounts(keyset_counts);
         showToast("Error minting, please try again");
       } else if (
