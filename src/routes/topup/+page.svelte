@@ -25,7 +25,7 @@
   import { showToast } from "$lib/stores/toast";
   import Toast from "../../components/Toast.svelte";
   import seed from "$lib/shared/store/wallet";
-  import { generateMnemonic } from "@scure/bip39";
+  import { generateMnemonic, mnemonicToSeedSync } from "@scure/bip39";
   import { wordlist } from "@scure/bip39/wordlists/english";
   import { theme } from "$lib/stores/theme";
   import Navbar from "../../components/Navbar.svelte";
@@ -139,28 +139,22 @@
     if (!matchingKeyset.id) {
       console.warn("Warning: The keyset is missing an ID", matchingKeyset);
     } else {
-      console.log('Using keyset with id:', matchingKeyset.id);
+      console.log("Using keyset with id:", matchingKeyset.id);
     }
 
     // Convert the seed string (mnemonic) to a 256-bit seed using SHA-256
-    const encoder = new TextEncoder();
-    const data = encoder.encode(seed);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const seedBuffer = new Uint8Array(hashBuffer);
-    
-    console.log('Seed buffer created with length:', seedBuffer.length, 'bytes');
+    let seedBytes = mnemonicToSeedSync(seed);
 
     // Create the wallet with the bip39seed parameter
     const wallet = new CashuWallet(mint, {
       unit: "xsr",
       keys: matchingKeyset,
       // Use the properly sized seed
-      seed: seedBuffer,
-      bip39seed: seedBuffer,
+      bip39seed: seedBytes,
       // Configure wallet to only use denomination 1
       preferredDenominations: [1],
       // Set denomination target to 1 to ensure we only use denomination 1
-      denominationTarget: 1
+      denominationTarget: 1,
     });
 
     return { wallet, keys: matchingKeyset };
@@ -215,12 +209,17 @@
 
         if (mintQuoteChecked.state === MintQuoteState.PAID) {
           let keyset_counts = getKeysetCounts();
-          
+
           // Get the stored counter, handling the case where keys.id might be undefined
           const keysetId = keys && keys.id ? keys.id : "default";
           let keyset_count = keyset_counts[keysetId] || 0;
-          console.log("Using keyset count:", keyset_count, "for keyset ID:", keysetId);
-          
+          console.log(
+            "Using keyset count:",
+            keyset_count,
+            "for keyset ID:",
+            keysetId,
+          );
+
           const options = {
             // Set outputAmounts to ensure only denomination 1 proofs
             outputAmounts: {
@@ -252,7 +251,7 @@
           if (!allDenom1) {
             console.warn("Warning: Some proofs do not have denomination 1");
           }
-          
+
           // Update the keyset count with how many proofs we created
           let new_count = keyset_count + proofs.length;
           keyset_counts[keysetId] = new_count;
@@ -326,11 +325,16 @@
       );
       const { wallet, keys } = await initializeWallet($mint_url, $seed);
       let keyset_counts = getKeysetCounts();
-      
+
       // Get the stored counter, handling the case where keys.id might be undefined
       const keysetId = keys && keys.id ? keys.id : "default";
       let keyset_count = keyset_counts[keysetId] || 0;
-      console.log("Using keyset count:", keyset_count, "for keyset ID:", keysetId);
+      console.log(
+        "Using keyset count:",
+        keyset_count,
+        "for keyset ID:",
+        keysetId,
+      );
 
       const options = {
         // Set outputAmounts to ensure only denomination 1 proofs
@@ -394,9 +398,9 @@
           console.log("Generated new seed (mnemonic)");
         }
         const { wallet, keys } = await initializeWallet($mint_url, $seed);
-        
+
         let keyset_counts = getKeysetCounts();
-        
+
         // Get the stored counter, handling the case where keys.id might be undefined
         const keysetId = keys && keys.id ? keys.id : "default";
         let keyset_count = keyset_counts[keysetId] || 0;
@@ -495,14 +499,16 @@
   class="min-h-screen flex flex-col text-gray-800 bg-white dark:bg-[var(--bg-primary)] dark:text-white"
 >
   <Navbar />
-  <main class="flex-grow flex flex-col justify-start items-center px-4 py-8 bg-white dark:bg-[var(--bg-primary)]">
+  <main
+    class="flex-grow flex flex-col justify-start items-center px-4 py-8 bg-white dark:bg-[var(--bg-primary)]"
+  >
     <div class="header-container">
-      <h1 class="text-4xl font-bold mb-2 text-black dark:text-white">
-        Top Up
-      </h1>
+      <h1 class="text-4xl font-bold mb-2 text-black dark:text-white">Top Up</h1>
     </div>
 
-    <div class="text-2xl font-semibold text-[#333333] dark:text-white mt-2 mb-4">
+    <div
+      class="text-2xl font-semibold text-[#333333] dark:text-white mt-2 mb-4"
+    >
       You have {balance} searches left
       <button
         class="refresh-balance-button"
@@ -886,7 +892,7 @@
   /* Ensure QR code stays visible in dark mode */
   :global(.dark) .qr-wrapper {
     background-color: white !important;
-    border: 1px solid #4B5563;
+    border: 1px solid #4b5563;
   }
 
   :global(.dark) .qr-wrapper :global(svg) {

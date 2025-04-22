@@ -20,6 +20,7 @@
   import { theme } from "$lib/stores/theme";
   import Navbar from "../../components/Navbar.svelte";
   import { showToast } from "$lib/stores/toast";
+  import { mnemonicToSeedSync } from "@scure/bip39";
 
   let words = Array(12).fill("");
   let errorMessage = "";
@@ -52,25 +53,19 @@
     }
 
     // Convert the seed string to a proper 256-bit seed using SHA-256
-    const encoder = new TextEncoder();
-    const data = encoder.encode($seed);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const seedBuffer = new Uint8Array(hashBuffer);
-
-    console.log("Seed buffer created with length:", seedBuffer.length, "bytes");
+    let seedBytes = mnemonicToSeedSync($seed);
 
     wallet = new CashuWallet(mint, {
       unit: "xsr",
       keys: matchingKeyset,
       // Try both parameter names that might be accepted
-      seed: seedBuffer,
-      bip39seed: seedBuffer,
+      bip39seed: seedBytes,
       // Configure wallet to only use denomination 1
       preferredDenominations: [1],
       // Set denomination target to 1 to ensure we only use denomination 1
       denominationTarget: 1,
     });
-    
+
     return wallet;
   }
 
@@ -324,10 +319,11 @@
           console.error("Wallet missing after receiving token", wallet);
           throw new Error("Wallet invalid after token receive");
         }
-        
+
         // Get the stored counter, handling the case where keys.id might be undefined
         let keyset_counts = getKeysetCounts();
-        const keysetId = wallet.keys && wallet.keys.id ? wallet.keys.id : "default";
+        const keysetId =
+          wallet.keys && wallet.keys.id ? wallet.keys.id : "default";
         let keyset_count = keyset_counts[keysetId] || 0;
         let new_count = keyset_count + proofs.length;
         keyset_counts[keysetId] = new_count;
