@@ -471,7 +471,7 @@
   class="min-h-screen flex flex-col text-gray-800 bg-white dark:bg-[var(--bg-primary)] dark:text-white"
 >
   <Navbar />
-  <main class="flex-grow flex flex-col justify-start items-center px-4 py-8">
+  <main class="flex-grow flex flex-col justify-start items-center px-4 py-8 bg-white dark:bg-[var(--bg-primary)]">
     <div class="header-container">
       <h1 class="text-4xl font-bold mb-2 text-gray-800 dark:text-white">
         Top Up
@@ -788,29 +788,35 @@
   }
 
   /* Dark mode styles */
-  :global(.dark-mode) {
-    background-color: #1a1a1a;
+  :global(.dark) {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-hover: #3a3a3a;
+    --text-primary: #ffffff;
+    --text-secondary: #a0aec0;
+    --text-hover: #f0f0f0;
+    --border-color: #333;
   }
 
-  :global(.dark-mode) .text-gray-900 {
+  :global(.dark) .text-gray-900 {
     color: #ffffff;
   }
 
-  :global(.dark-mode) .text-gray-600,
-  :global(.dark-mode) .text-gray-800 {
+  :global(.dark) .text-gray-600,
+  :global(.dark) .text-gray-800 {
     color: #a0aec0;
   }
 
-  :global(.dark-mode) .top-up-button {
+  :global(.dark) .top-up-button {
     background-color: #2d2d2d;
     color: #ffffff;
   }
 
-  :global(.dark-mode) .top-up-button:hover {
+  :global(.dark) .top-up-button:hover {
     background-color: #3a3a3a;
   }
 
-  :global(.dark-mode) .transaction-table {
+  :global(.dark) .transaction-table {
     background-color: #2d2d2d;
   }
 
@@ -831,11 +837,11 @@
     color: #333;
   }
 
-  :global(.dark-mode) .refresh-balance-button {
+  :global(.dark) .refresh-balance-button {
     color: #a0aec0;
   }
 
-  :global(.dark-mode) .refresh-balance-button:hover {
+  :global(.dark) .refresh-balance-button:hover {
     background-color: rgba(255, 255, 255, 0.1);
     color: #ffffff;
   }
@@ -845,14 +851,21 @@
     background-color: white;
     padding: 1rem;
     border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .qr-wrapper :global(svg) {
+    color: black !important;
+    fill: black !important;
   }
 
   /* Ensure QR code stays visible in dark mode */
-  :global(.dark-mode) .qr-wrapper {
+  :global(.dark) .qr-wrapper {
     background-color: white !important;
+    border: 1px solid #4B5563;
   }
 
-  :global(.dark-mode) .qr-wrapper :global(svg) {
+  :global(.dark) .qr-wrapper :global(svg) {
     color: black !important;
     fill: black !important;
   }
@@ -949,30 +962,30 @@
   }
 
   /* Dark mode styles for the transaction table */
-  :global(.dark-mode) .transaction-table {
+  :global(.dark) .transaction-table {
     background-color: #2d2d2d;
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  :global(.dark-mode) .transaction-row {
+  :global(.dark) .transaction-row {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  :global(.dark-mode) .amount-cell {
+  :global(.dark) .amount-cell {
     color: #ffffff;
   }
 
-  :global(.dark-mode) .time-cell {
+  :global(.dark) .time-cell {
     color: #9ca3af;
   }
 
-  :global(.dark-mode) .copy-button,
-  :global(.dark-mode) .refresh-button {
+  :global(.dark) .copy-button,
+  :global(.dark) .refresh-button {
     color: #9ca3af;
   }
 
-  :global(.dark-mode) .copy-button:hover,
-  :global(.dark-mode) .refresh-button:hover {
+  :global(.dark) .copy-button:hover,
+  :global(.dark) .refresh-button:hover {
     color: #ffffff;
   }
 
@@ -1000,25 +1013,25 @@
   }
 
   /* Dark mode styles */
-  :global(.dark-mode) .status-badge.Pending {
+  :global(.dark) .status-badge.Pending {
     background-color: #451a03;
     color: #fdba74;
     border: 1px solid #f97316;
   }
 
-  :global(.dark-mode) .status-badge.Paid {
+  :global(.dark) .status-badge.Paid {
     background-color: #052e16;
     color: #86efac;
     border: 1px solid #22c55e;
   }
 
   /* Add this to your dark mode styles */
-  :global(.dark-mode) .history-title {
+  :global(.dark) .history-title {
     color: #ffffff;
   }
 
   /* Add these dark mode styles */
-  :global(.dark-mode) .qr-info {
+  :global(.dark) .qr-info {
     color: #ffffff !important;
   }
 
@@ -1041,27 +1054,27 @@
   }
 
   /* Add dark mode styles for copy-invoice-button */
-  :global(.dark-mode) .copy-invoice-button {
+  :global(.dark) .copy-invoice-button {
     background-color: #2d2d2d;
     color: white;
     border: 2px solid #ffffff;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 
-  :global(.dark-mode) .copy-invoice-button:hover {
+  :global(.dark) .copy-invoice-button:hover {
     background-color: #3a3a3a;
     border-color: #f0f0f0;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
   }
 
-  :global(.dark-mode) .copy-invoice-button:focus {
+  :global(.dark) .copy-invoice-button:focus {
     outline: none;
     box-shadow:
       0 0 0 2px #1a1a1a,
       0 0 0 4px rgba(255, 255, 255, 0.5);
   }
 
-  :global(.dark-mode) .copy-invoice-button::before {
+  :global(.dark) .copy-invoice-button::before {
     background: linear-gradient(45deg, #2d2d2d, #3a3a3a, #4a4a4a, #5a5a5a);
   }
 
@@ -1070,7 +1083,7 @@
     background-color: #ffffff;
   }
 
-  :global(body.dark-mode) {
+  :global(body.dark) {
     background-color: #1a1a1a;
   }
 
