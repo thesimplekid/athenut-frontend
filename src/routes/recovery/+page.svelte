@@ -25,11 +25,21 @@
     const mint = new CashuMint($mint_url);
     let keysets = await mint.getKeys();
     let matchingKeyset = keysets.keysets.find((key) => key.unit === "xsr");
+    
+    // Convert the seed string to a proper 256-bit seed using SHA-256
+    const encoder = new TextEncoder();
+    const data = encoder.encode($seed);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const seedBuffer = new Uint8Array(hashBuffer);
+    
+    console.log('Seed buffer created with length:', seedBuffer.length, 'bytes');
+    
     wallet = new CashuWallet(mint, {
       unit: "xsr",
       keys: matchingKeyset,
-      // In cashu-ts v2, mnemonicOrSeed has been replaced; using seeds directly
-      seed: $seed
+      // Try both parameter names that might be accepted
+      seed: seedBuffer,
+      bip39seed: seedBuffer
     });
     return wallet;
   }
@@ -71,30 +81,42 @@
   }
 
   async function handleRestore() {
-    $seed = words.join(" ");
-    let empty_batches = 0;
-    let start_counter = 0;
-    let end_counter = 99;
-
-    // Initialize wallet once at the start
-    if (!wallet) {
-      await initializeWallet();
-    }
-
-    if (!wallet) {
-      throw new Error("Failed to initialize wallet");
-    }
-
-    while (empty_batches < 3) {
-      console.log("Restoring wallet with words:", words);
-      let restores = await wallet.restore(start_counter, end_counter);
-      console.log("Received ", restores.proofs.length, " signatures from mint");
-      start_counter += 100;
-      end_counter += 100;
-      if (restores.proofs.length === 0) {
-        empty_batches += 1;
+    try {
+      // Set the seed value in the store
+      $seed = words.join(" ");
+      
+      // Initialize wallet with the proper seed
+      if (!wallet) {
+        await initializeWallet();
       }
-      await checkProofState(restores.proofs);
+
+      if (!wallet) {
+        throw new Error("Failed to initialize wallet");
+      }
+
+      let empty_batches = 0;
+      let start_counter = 0;
+      let end_counter = 99;
+
+      while (empty_batches < 3) {
+        console.log("Restoring wallet with seed phrase");
+        console.log("Wallet has seed property set:", wallet._seed ? "Yes (" + wallet._seed.length + " bytes)" : "No");
+        // The restore method may require seed to derive outputs
+        // Parameters: start, end, callback, secret_indices, customIds
+        let restores = await wallet.restore(start_counter, end_counter, null, null, null);
+        console.log("Received ", restores.proofs.length, " signatures from mint");
+        start_counter += 100;
+        end_counter += 100;
+        if (restores.proofs.length === 0) {
+          empty_batches += 1;
+        }
+        await checkProofState(restores.proofs);
+      }
+      
+      console.log("Wallet restoration completed");
+    } catch (error) {
+      console.error("Restore error:", error);
+      errorMessage = `Failed to restore wallet: ${error.message}`;
     }
   }
 
