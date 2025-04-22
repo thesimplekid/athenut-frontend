@@ -190,17 +190,9 @@
     color: #a0aec0;
   }
 
-  .footer.dark .footer-links a {
-    color: #a0aec0;
-  }
+  /* Removed unused footer-links selectors */
 
-  .footer.dark .footer-links a:hover {
-    color: #ffffff;
-  }
-
-  .footer.dark .separator {
-    color: #4a5568;
-  }
+  /* Removed .footer.dark .separator - not used in the template */
 
   .search-counter {
     text-align: center;

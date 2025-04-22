@@ -24,7 +24,7 @@
   import { theme } from "$lib/stores/theme";
   import Navbar from "../../components/Navbar.svelte";
 
-  /** @type {import("@cashu/cashu-ts").AmountPreference} */
+  // AmountPreference type has been removed in cashu-ts v2
 
   /** @type {string} */
   let data = "";
@@ -90,7 +90,8 @@
     const wallet = new CashuWallet(mint, {
       unit: "xsr",
       keys: matchingKeyset,
-      mnemonicOrSeed: seed,
+      // In cashu-ts v2, mnemonicOrSeed has been replaced; using seeds directly
+      seed: seed
     });
 
     return { wallet, keys: wallet.keys };
@@ -105,6 +106,7 @@
       selectedSearches = searches;
 
       try {
+        // Pass the $seed value from the store to the function
         const { wallet, keys } = await initializeWallet($mint_url, $seed);
 
         // Create the mint quote
@@ -136,12 +138,16 @@
           let keyset_count = keyset_counts[keys.id] || 0;
 
           const options = {
-            preference: [{ amount: 1, count: searches }],
+            // In cashu-ts v2, preference is now outputAmounts with sendAmounts and keepAmounts arrays
+            outputAmounts: {
+              sendAmounts: Array(searches).fill(1) // Creates an array of 1's with length of 'searches'
+            },
             keysetId: keys.id,
             counter: keyset_count,
           };
 
-          const { proofs } = await wallet.mintTokens(
+          // In cashu-ts v2, mintTokens is now mintProofs and returns proofs directly, not in an object
+          const proofs = await wallet.mintProofs(
             searches,
             mintQuote.quote,
             options,
@@ -182,15 +188,20 @@
     }
 
     try {
+      // Pass the $seed value from the store to the function
       const { wallet, keys } = await initializeWallet($mint_url, $seed);
       let keyset_counts = getKeysetCounts();
       let keyset_count = keyset_counts[keys.id] || 0;
       const options = {
-        preference: [{ amount: 1, count: mintQuote.amount }],
+        // In cashu-ts v2, preference is now outputAmounts with sendAmounts and keepAmounts arrays
+        outputAmounts: {
+          sendAmounts: Array(mintQuote.amount).fill(1) // Array of 1's with length of 'mintQuote.amount'
+        },
         keysetId: keys.id,
         counter: keyset_count,
       };
-      let { proofs } = await wallet.mintTokens(
+      // In cashu-ts v2, mintTokens is now mintProofs and returns proofs directly, not in an object
+      let proofs = await wallet.mintProofs(
         mintQuote.amount,
         quoteId,
         options,
@@ -217,6 +228,7 @@
       } else if (error.message?.toLowerCase().includes("already signed")) {
         // HACK: Make this smarter
         console.log("Alreasy signed");
+        // Pass the $seed value from the store to the function
         const { wallet, keys } = await initializeWallet($mint_url, $seed);
         let keyset_counts = getKeysetCounts();
         let keyset_count = keyset_counts[keys.id] || 0;

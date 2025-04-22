@@ -231,10 +231,7 @@
       max-width: 280px;
     }
 
-    .sub-heading {
-      font-size: 1.25rem;
-      padding: 0 1rem;
-    }
+    /* Removing unused selector */
 
     .background-image {
       width: 100vw;

@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import seed from "$lib/shared/store/wallet";
   import mint_url from "$lib/shared/store/mint_url";
-  import { CashuMint, CashuWallet } from "@cashu/cashu-ts";
+  import { CashuMint, CashuWallet, CheckStateEnum } from "@cashu/cashu-ts";
   import Footer from "../../components/Footer.svelte";
   import Toast from "../../components/Toast.svelte";
   import { getProofs, writeProofs } from "$lib/shared/utils";
@@ -28,7 +28,8 @@
     wallet = new CashuWallet(mint, {
       unit: "xsr",
       keys: matchingKeyset,
-      mnemonicOrSeed: $seed,
+      // In cashu-ts v2, mnemonicOrSeed has been replaced; using seeds directly
+      seed: $seed
     });
     return wallet;
   }
@@ -47,12 +48,11 @@
       throw new Error("Failed to initialize wallet");
     }
 
-    // Get unspent proofs
-    let spentProofs = await wallet.checkProofsSpent(proofs);
+    // In cashu-ts v2, checkProofsSpent has been replaced by checkProofsStates
+    let proofStates = await wallet.checkProofsStates(proofs);
     // Filter the original proofs array to remove spent ones
-    let unspentProofs = proofs.filter(
-      (proof) =>
-        !spentProofs.some((spentProof) => proof.secret === spentProof.secret),
+    let unspentProofs = proofs.filter((proof, i) => 
+      proofStates[i]?.state !== CheckStateEnum.SPENT
     );
     console.log("Restored ", unspentProofs.length, " proofs");
     let current_proofs = getProofs();
