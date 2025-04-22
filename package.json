@@ -37,6 +37,7 @@
   "type": "module",
   "dependencies": {
     "@cashu/cashu-ts": "^2.4.2",
+    "@scure/bip39": "^1.5.4",
     "@svelte-put/copy": "^3.0.0",
     "@svelte-put/qr": "^1.2.0",
     "caniuse-lite": "",

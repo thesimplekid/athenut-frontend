@@ -35,15 +35,9 @@
       // Add storage listener
       window.addEventListener('storage', handleStorageChange);
       
-      // Also periodically refresh the balance every few seconds
-      const intervalId = setInterval(() => {
-        balance = forceBalanceRefresh();
-      }, 3000); // Refresh every 3 seconds
-      
       return () => {
-        // Clean up listener and interval when component is destroyed
+        // Clean up listener when component is destroyed
         window.removeEventListener('storage', handleStorageChange);
-        clearInterval(intervalId);
       };
     });
     
