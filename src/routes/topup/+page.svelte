@@ -15,6 +15,8 @@
     setKeysetCounts,
     updateQuoteState,
     writeProofs,
+    debugProofs,
+    forceBalanceRefresh,
   } from "$lib/shared/utils";
   import { CashuMint, CashuWallet, MintQuoteState } from "@cashu/cashu-ts";
   import Footer from "../../components/Footer.svelte";
@@ -55,10 +57,42 @@
   let isLoading = false;
 
   onMount(async () => {
+    // Debug the proofs to see what's going on
+    console.log('Topup Page - onMount');
+    debugProofs();
+    
+    // Initialize the wallet balance - use both approaches
+    balance = await getBalance();
+    console.log('Balance after getBalance():', balance);
+    
+    // Force a direct refresh from localStorage
+    balance = forceBalanceRefresh();
+    console.log('Balance after forceBalanceRefresh():', balance);
+    
+    // Log the actual proofs for debugging
+    const proofs = getProofs();
+    console.log('Actual proofs array:', proofs);
+    
     if ($mint_url != undefined) {
-      balance = getBalance();
       await getInfo();
     }
+    
+    // Create the storage event handler
+    const handleStorageChange = (e) => {
+      if (e.key === 'proofs') {
+        console.log('Storage event - proofs changed');
+        balance = forceBalanceRefresh();
+        console.log('Updated balance:', balance);
+      }
+    };
+    
+    // Add storage listener to update balance when proofs change
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      // Clean up event listener when component is destroyed
+      window.removeEventListener('storage', handleStorageChange);
+    };
   });
 
   /**
@@ -161,6 +195,11 @@
           const combinedList = [...current_proofs, ...proofs];
           writeProofs(combinedList);
           updateQuoteState(mintQuote.quote, "paid");
+          
+          // Update the balance right after proofs are written
+          balance = forceBalanceRefresh();
+          console.log('Updated balance after mintProofs:', balance);
+          
           pendingInvoices = getPendingQuotes();
           goto("/");
         }
@@ -213,6 +252,10 @@
       const combinedList = [...current_proofs, ...proofs];
       writeProofs(combinedList);
       updateQuoteState(mintQuote.id, "paid");
+      
+      // Update the balance right after proofs are written
+      balance = forceBalanceRefresh();
+      console.log('Updated balance after handleRefresh:', balance);
     } catch (error) {
       if (error.message?.toLowerCase().includes("expired")) {
         updateQuoteState(quoteId, "expired");
@@ -241,7 +284,8 @@
     } finally {
       // Always update pending invoices and balance
       pendingInvoices = getPendingQuotes();
-      balance = getBalance();
+      balance = forceBalanceRefresh();
+      console.log('Final balance after handleRefresh:', balance);
 
       // Always remove spinning class after a delay
       if (button) {
@@ -312,6 +356,27 @@
 
     <div class="text-2xl font-semibold text-gray-900 dark:text-white mt-2 mb-4">
       You have {balance} searches left
+      <button 
+        class="refresh-balance-button"
+        on:click={() => {
+          balance = forceBalanceRefresh();
+          console.log('Balance refreshed manually:', balance);
+        }}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg" 
+          width="16" 
+          height="16" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          stroke-width="2" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"
+        >
+          <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+      </button>
     </div>
 
     <p class="text-xl text-gray-600 mb-6">
@@ -528,38 +593,7 @@
     text-align: center;
   }
 
-  .main-heading {
-    display: inline-block;
-    position: relative;
-  }
-
-  .controls-container {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .back-button {
-    background: none;
-    border: none;
-    font-size: 2rem;
-    cursor: pointer;
-    padding: 0 0.5rem;
-    color: var(--text-primary);
-    transition: color 0.3s ease;
-  }
-
-  :global(.dark-mode) .back-button {
-    color: #ffffff !important;
-  }
-
-  .dark-mode .back-button {
-    color: #ffffff !important;
-  }
+  /* Removed unused button and container styles */
 
   .copy-invoice-button {
     background-color: #1a1a1a;
@@ -632,10 +666,6 @@
     background-color: #1a1a1a;
   }
 
-  :global(.dark-mode) .main-heading {
-    color: #ffffff !important;
-  }
-
   :global(.dark-mode) .text-gray-900 {
     color: #ffffff;
   }
@@ -656,6 +686,32 @@
 
   :global(.dark-mode) .transaction-table {
     background-color: #2d2d2d;
+  }
+
+  .refresh-balance-button {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+
+  .refresh-balance-button:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: #333;
+  }
+
+  :global(.dark-mode) .refresh-balance-button {
+    color: #a0aec0;
+  }
+
+  :global(.dark-mode) .refresh-balance-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
   }
 
   /* QR code specific styles */
@@ -837,10 +893,6 @@
 
   /* Add these dark mode styles */
   :global(.dark-mode) .qr-info {
-    color: #ffffff !important;
-  }
-
-  .dark-mode .qr-info {
     color: #ffffff !important;
   }
 

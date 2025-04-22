@@ -1,9 +1,25 @@
 /** @type {import("@cashu/cashu-ts").Proof} */
 
 export function getProofs() {
-  const proofs = localStorage.getItem('proofs');
-  const parsedProofs = proofs ? JSON.parse(proofs) : [];
-  return Array.isArray(parsedProofs) ? parsedProofs : [];
+  try {
+    const proofs = localStorage.getItem('proofs');
+    if (!proofs) return [];
+    
+    const parsedProofs = JSON.parse(proofs);
+    if (!Array.isArray(parsedProofs)) {
+      console.error('getProofs - parsed proofs is not an array');
+      return [];
+    }
+    
+    // Filter out invalid proofs
+    return parsedProofs.filter(proof => {
+      // Check that proof is an object and has a valid amount property
+      return proof && typeof proof === 'object' && typeof proof.amount === 'number';
+    });
+  } catch (error) {
+    console.error('Error in getProofs:', error);
+    return [];
+  }
 }
 
 /** @type {(proofs: import("@cashu/cashu-ts").Proof[]) => Promise<void>} */
@@ -35,8 +51,85 @@ export function addSpentProof(proof) {
 }
 
 export function getBalance() {
-  const proofs = getProofs();
-  return proofs.reduce((total, proof) => total + proof.amount, 0);
+  try {
+    const proofs = getProofs();
+    console.log('getBalance - proofs:', proofs);
+    
+    // Make sure we have an array
+    if (!Array.isArray(proofs)) {
+      console.error('getBalance - proofs is not an array');
+      return 0;
+    }
+    
+    // Make sure all proofs have a valid amount property
+    const total = proofs.reduce((total, proof) => {
+      // If proof or proof.amount is undefined or not a number, use 0
+      const amount = proof && typeof proof.amount === 'number' ? proof.amount : 0;
+      return total + amount;
+    }, 0);
+    
+    console.log('getBalance - calculated total:', total);
+    return total;
+  } catch (error) {
+    console.error('Error in getBalance:', error);
+    return 0;
+  }
+}
+
+/**
+ * Force a refresh of the balance by reading directly from localStorage
+ * @returns {number} The current balance
+ */
+export function forceBalanceRefresh() {
+  try {
+    // Get fresh data directly from localStorage
+    const rawProofs = localStorage.getItem('proofs');
+    if (!rawProofs) return 0;
+    
+    const parsedProofs = JSON.parse(rawProofs);
+    if (!Array.isArray(parsedProofs)) return 0;
+    
+    // Calculate balance
+    const total = parsedProofs.reduce((total, proof) => {
+      const amount = proof && typeof proof.amount === 'number' ? proof.amount : 0;
+      return total + amount;
+    }, 0);
+    
+    console.log('forceBalanceRefresh - calculated total:', total);
+    return total;
+  } catch (error) {
+    console.error('Error in forceBalanceRefresh:', error);
+    return 0;
+  }
+}
+
+/**
+ * Debug function to log the localStorage proofs and analyze them
+ * @returns {void}
+ */
+export function debugProofs() {
+  const rawProofs = localStorage.getItem('proofs');
+  console.log('Raw proofs from localStorage:', rawProofs);
+  
+  try {
+    const parsedProofs = JSON.parse(rawProofs || '[]');
+    console.log('Parsed proofs:', parsedProofs);
+    
+    if (Array.isArray(parsedProofs)) {
+      console.log('Number of proofs:', parsedProofs.length);
+      console.log('Calculated balance:', parsedProofs.reduce((total, proof) => total + (proof.amount || 0), 0));
+      
+      // Check for missing amount properties
+      const missingAmounts = parsedProofs.filter(proof => typeof proof.amount !== 'number');
+      if (missingAmounts.length > 0) {
+        console.log('Proofs with missing or invalid amount:', missingAmounts);
+      }
+    } else {
+      console.log('Parsed proofs is not an array!');
+    }
+  } catch (error) {
+    console.error('Error parsing proofs:', error);
+  }
 }
 
 

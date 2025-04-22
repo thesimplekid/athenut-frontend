@@ -8,11 +8,14 @@
   import { onMount } from "svelte";
   import { theme } from "$lib/stores/theme";
   import Navbar from "../../components/Navbar.svelte";
+  import { getBalance, debugProofs, getProofs, forceBalanceRefresh } from "$lib/shared/utils";
 
   // Sample words (these should come from your app's logic later)
   const words = $seed.trim().split(/\s+/);
 
   let isBlurred = true;
+  // Initialize balance
+  let balance = 0;
 
   function toggleBlur() {
     isBlurred = !isBlurred;
@@ -23,7 +26,35 @@
     showToast("Recovery phrase copied to clipboard.");
   }
 
-  onMount(() => {
+  onMount(async () => {
+    // Debug the proofs to see what's going on
+    console.log('Backup Page - onMount');
+    debugProofs();
+    
+    // Initialize the wallet balance - use both approaches
+    balance = await getBalance();
+    console.log('Balance after getBalance():', balance);
+    
+    // Force a direct refresh from localStorage
+    balance = forceBalanceRefresh();
+    console.log('Balance after forceBalanceRefresh():', balance);
+    
+    // Log the actual proofs for debugging
+    const proofs = getProofs();
+    console.log('Actual proofs array:', proofs);
+    
+    // Create the storage event handler
+    const handleStorageChange = (e) => {
+      if (e.key === 'proofs') {
+        console.log('Storage event - proofs changed');
+        balance = forceBalanceRefresh();
+        console.log('Updated balance:', balance);
+      }
+    };
+    
+    // Add storage listener to update balance when proofs change
+    window.addEventListener('storage', handleStorageChange);
+    
     // Get theme from localStorage
     const savedTheme = localStorage.getItem("theme") || "light";
     // Update the theme store
@@ -32,6 +63,11 @@
     if (savedTheme === "dark") {
       document.documentElement.classList.add("dark");
     }
+    
+    return () => {
+      // Clean up event listener when component is destroyed
+      window.removeEventListener('storage', handleStorageChange);
+    };
   });
 
   // Subscribe to theme changes
@@ -88,6 +124,31 @@
       </div>
     </div>
 
+    <div class="text-2xl font-semibold text-gray-900 dark:text-white mt-2 mb-4">
+      You have {balance} searches left
+      <button 
+        class="refresh-balance-button"
+        on:click={() => {
+          balance = forceBalanceRefresh();
+          console.log('Balance refreshed manually:', balance);
+        }}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg" 
+          width="16" 
+          height="16" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          stroke-width="2" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"
+        >
+          <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+      </button>
+    </div>
+
     <p class="text-xl text-gray-600 dark:text-[#a0aec0] mb-6">
       Save your secret recovery phrase in a secure place that only you control.
     </p>
@@ -140,16 +201,7 @@
 </div>
 
 <style>
-  .controls-container {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
+  /* Navigation and visibility controls */
   .visibility-toggle {
     background: none;
     border: none;
@@ -217,23 +269,7 @@
     background: #d1d5db;
   }
 
-  .copy-button {
-    /* background-color: var(--bg-secondary); */
-    color: var(--text-primary);
-    padding: 16px 32px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    width: auto;
-    max-width: none;
-    border-radius: 9999px;
-  }
-
-
-  .copy-button:focus {
-    outline: none;
-  }
+  /* Seed container and word styling */
 
   @media (max-width: 640px) {
     .seed-container {
@@ -258,10 +294,6 @@
     .underline {
       left: 2rem;
     }
-
-    .main-heading {
-      font-size: 2rem;
-    }
   }
 
   :global(.dark) main {
@@ -277,18 +309,6 @@
   }
 
   :global(.dark) .word-text {
-    color: #ffffff !important;
-  }
-
-  :global(.dark) .main-heading {
-    color: #ffffff !important;
-  }
-
-  :global(.dark) .copy-button {
-    color: #a0aec0 !important;
-  }
-
-  :global(.dark) .copy-button:hover {
     color: #ffffff !important;
   }
 
@@ -360,23 +380,6 @@
     color: #6b7280;
   }
 
-  .token-input {
-    width: 100%;
-    padding: 0.5rem;
-    font-size: 1rem;
-    border: none;
-    background: transparent;
-    color: var(--text-primary);
-  }
-
-  .token-input:focus {
-    outline: none;
-  }
-
-  :global(.dark) .token-input {
-    color: var(--text-primary);
-  }
-
   .word-text {
     font-size: 1.2rem;
     font-weight: 500;
@@ -432,6 +435,32 @@
   }
 
   :global(.dark) .recovery-button-secondary:hover {
+    color: #ffffff;
+  }
+
+  .refresh-balance-button {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+
+  .refresh-balance-button:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: #333;
+  }
+
+  :global(.dark) .refresh-balance-button {
+    color: #a0aec0;
+  }
+
+  :global(.dark) .refresh-balance-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
     color: #ffffff;
   }
 
