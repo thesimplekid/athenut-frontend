@@ -58,11 +58,7 @@
     wallet = new CashuWallet(mint, {
       unit: "xsr",
       keys: matchingKeyset,
-      // Try both parameter names that might be accepted
       bip39seed: seedBytes,
-      // Configure wallet to only use denomination 1
-      preferredDenominations: [1],
-      // Set denomination target to 1 to ensure we only use denomination 1
       denominationTarget: 1,
     });
 
@@ -132,18 +128,10 @@
 
       while (empty_batches < 3) {
         console.log("Restoring wallet with seed phrase");
-        console.log(
-          "Wallet has seed property set:",
-          wallet._seed ? "Yes (" + wallet._seed.length + " bytes)" : "No",
-        );
         // The restore method may require seed to derive outputs
-        // Parameters: start, end, callback, secret_indices, customIds
         let restores = await wallet.restore(
           start_counter,
           end_counter,
-          null,
-          null,
-          null,
         );
         console.log(
           "Received ",
@@ -322,8 +310,8 @@
 
         // Get the stored counter, handling the case where keys.id might be undefined
         let keyset_counts = getKeysetCounts();
-        const keysetId =
-          wallet.keys && wallet.keys.id ? wallet.keys.id : "default";
+        // In newer cashu-ts versions, wallet.keys is a Map, so we need to get the keyset differently
+        const keysetId = matchingKeyset.id || "default";
         let keyset_count = keyset_counts[keysetId] || 0;
         let new_count = keyset_count + proofs.length;
         keyset_counts[keysetId] = new_count;

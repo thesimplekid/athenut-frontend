@@ -151,8 +151,6 @@
       keys: matchingKeyset,
       // Use the properly sized seed
       bip39seed: seedBytes,
-      // Configure wallet to only use denomination 1
-      preferredDenominations: [1],
       // Set denomination target to 1 to ensure we only use denomination 1
       denominationTarget: 1,
     });
