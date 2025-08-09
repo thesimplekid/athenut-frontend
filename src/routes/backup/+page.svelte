@@ -127,7 +127,7 @@
   <Navbar />
   <main class="flex-grow flex flex-col justify-start items-center px-4 py-8">
     <div class="relative w-full max-w-[800px]">
-      <h1 class="text-4xl font-bold mb-2 text-center text-gray-800 dark:text-white">
+      <h1 class="text-4xl font-bold mb-2 text-center text-gray-800 dark:text-white" style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;">
         Backup
       </h1>
 
@@ -162,7 +162,7 @@
       </div>
     </div>
 
-    <div class="text-2xl font-semibold text-gray-900 dark:text-white mt-2 mb-4">
+    <div class="text-2xl font-semibold text-gray-900 dark:text-white mt-2 mb-4" style="color: {$theme === 'dark' ? '#ffffff' : '#111827'} !important;">
       You have {balance} searches left
       <button 
         class="refresh-balance-button"
@@ -208,7 +208,7 @@
     <div class="divider my-8">OR</div>
 
     <div class="token-section w-full max-w-800px flex flex-col items-center">
-      <h2 class="text-2xl font-bold mb-4 text-center text-gray-800 dark:text-white">
+      <h2 class="text-2xl font-bold mb-4 text-center text-gray-800 dark:text-white" style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;">
         Export Search Token
       </h2>
       
@@ -446,20 +446,7 @@
     background-color: var(--bg-secondary) !important;
   }
 
-  .recovery-button {
-    background-color: #1a1a1a;
-    color: white;
-    border: none;
-    border-radius: 9999px;
-    padding: 16px 32px;
-    font-size: 18px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(26, 26, 26, 0.2);
-    width: 100%;
-    max-width: 300px;
-  }
+  /* Removed unused recovery-button styles */
 
   .recovery-button-secondary {
     background-color: transparent;
@@ -475,10 +462,7 @@
     max-width: 300px;
   }
 
-  :global(.dark) .recovery-button {
-    background-color: #2d2d2d;
-    color: white;
-  }
+  /* Removed unused dark mode recovery-button styles */
 
   :global(.dark) .recovery-button-secondary {
     color: #a0aec0;

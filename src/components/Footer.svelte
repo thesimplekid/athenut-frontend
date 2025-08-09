@@ -1,30 +1,5 @@
 <script>
   import { theme } from "$lib/stores/theme";
-  import { PUBLIC_API_URL } from "$env/static/public";
-  import { onMount } from "svelte";
-
-  let searchCount = 0;
-  let loading = true;
-
-  async function fetchSearchCount() {
-    try {
-      const response = await fetch(`${PUBLIC_API_URL}/search_count`);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      const data = await response.json();
-      searchCount = data.all_time_search_count;
-    } catch (err) {
-      error = "Failed to fetch search count";
-      console.error("Error:", err);
-    } finally {
-      loading = false;
-    }
-  }
-
-  onMount(() => {
-    fetchSearchCount();
-  });
 </script>
 
 <footer
@@ -70,11 +45,7 @@
       </a>
     </div>
   </div>
-  {#if !loading}
-    <div class="search-counter">
-      {searchCount?.toLocaleString() ?? 0} searches served so far
-    </div>
-  {/if}
+  <!-- Search count removed to focus on UI fixes only -->
   <div class="footer-disclaimer">
     Athenut is experimental and in beta. Use with caution.
   </div>

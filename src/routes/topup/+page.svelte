@@ -5,7 +5,6 @@
   import SvgQR from "@svelte-put/qr/svg/QR.svelte";
   import { copyToClipboard } from "@svelte-put/copy";
   import bolt11Decoder from "light-bolt11-decoder";
-  import { PUBLIC_API_URL } from "$env/static/public";
   import { goto } from "$app/navigation";
   import mint_url from "$lib/shared/store/mint_url";
   import {
@@ -57,10 +56,9 @@
   let pendingInvoices = getPendingQuotes();
 
   async function getInfo() {
-    /** @type {InfoResult} */
-    let info = await fetch(`${PUBLIC_API_URL}/info`, {}).then((r) => r.json());
-
-    $mint_url = info.mint;
+    // API call removed to focus on UI fixes only
+    // let info = await fetch(`${PUBLIC_API_URL}/info`, {}).then((r) => r.json());
+    // $mint_url = info.mint;
   }
 
   let isLoading = false;
@@ -501,11 +499,12 @@
     class="flex-grow flex flex-col justify-start items-center px-4 py-8 bg-white dark:bg-[var(--bg-primary)]"
   >
     <div class="header-container">
-      <h1 class="text-4xl font-bold mb-2 text-black dark:text-white">Top Up</h1>
+      <h1 class="text-4xl font-bold mb-2 text-black dark:text-white" style="color: {$theme === 'dark' ? '#ffffff' : '#000000'} !important;">Top Up</h1>
     </div>
 
     <div
       class="text-2xl font-semibold text-[#333333] dark:text-white mt-2 mb-4"
+      style="color: {$theme === 'dark' ? '#ffffff' : '#333333'} !important;"
     >
       You have {balance} searches left
       <button
@@ -826,14 +825,7 @@
     --border-color: #333;
   }
 
-  :global(.dark) .text-gray-900 {
-    color: #ffffff;
-  }
-
-  :global(.dark) .text-gray-600,
-  :global(.dark) .text-gray-800 {
-    color: #a0aec0;
-  }
+  /* Removed problematic global text color overrides that were causing white text on white background */
 
   :global(.dark) .top-up-button {
     background-color: #2d2d2d;
