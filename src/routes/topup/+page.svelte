@@ -501,11 +501,12 @@
     class="flex-grow flex flex-col justify-start items-center px-4 py-8 bg-white dark:bg-[var(--bg-primary)]"
   >
     <div class="header-container">
-      <h1 class="text-4xl font-bold mb-2 text-black dark:text-white">Top Up</h1>
+      <h1 class="text-4xl font-bold mb-2 text-black dark:text-white" style="color: {$theme === 'dark' ? '#ffffff' : '#000000'} !important;">Top Up</h1>
     </div>
 
     <div
       class="text-2xl font-semibold text-[#333333] dark:text-white mt-2 mb-4"
+      style="color: {$theme === 'dark' ? '#ffffff' : '#333333'} !important;"
     >
       You have {balance} searches left
       <button
@@ -826,13 +827,22 @@
     --border-color: #333;
   }
 
-  :global(.dark) .text-gray-900 {
-    color: #ffffff;
+  /* Force proper text colors for headings and balance text */
+  main h1 {
+    color: #000000 !important;
   }
 
-  :global(.dark) .text-gray-600,
-  :global(.dark) .text-gray-800 {
-    color: #a0aec0;
+  :global(.dark) main h1 {
+    color: #ffffff !important;
+  }
+
+  /* Force proper text colors for balance text */
+  main div[class*="text-2xl"] {
+    color: #333333 !important;
+  }
+
+  :global(.dark) main div[class*="text-2xl"] {
+    color: #ffffff !important;
   }
 
   :global(.dark) .top-up-button {

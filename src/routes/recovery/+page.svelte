@@ -408,6 +408,7 @@
   >
     <h1
       class="text-4xl font-bold mb-2 text-center text-gray-800 dark:text-white"
+      style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;"
     >
       Recovery
     </h1>
@@ -459,6 +460,7 @@
     <div class="token-section w-full max-w-800px flex flex-col items-center">
       <h2
         class="text-2xl font-bold mb-4 text-center text-gray-800 dark:text-white"
+        style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;"
       >
         Redeem Search Token
       </h2>
@@ -680,9 +682,7 @@
       left: 2rem;
     }
 
-    .main-heading {
-      font-size: 2rem;
-    }
+    /* Removed unused main-heading styles */
 
     .recovery-button {
       width: 80%;
@@ -721,9 +721,7 @@
     color: #ffffff !important;
   }
 
-  :global(.dark) .main-heading {
-    color: #ffffff !important;
-  }
+  /* Removed unused dark mode main-heading styles */
 
   :global(.dark) .recovery-button {
     background-color: #2d2d2d;
@@ -737,9 +735,7 @@
     color: #ffffff;
   }
 
-  :global(.dark) .back-button {
-    color: #ffffff !important;
-  }
+  /* Removed unused dark mode back-button styles */
 
   /* Add dark mode text color for headings */
   :global(.dark) h1 {
