@@ -5,7 +5,6 @@
   import SvgQR from "@svelte-put/qr/svg/QR.svelte";
   import { copyToClipboard } from "@svelte-put/copy";
   import bolt11Decoder from "light-bolt11-decoder";
-  import { PUBLIC_API_URL } from "$env/static/public";
   import { goto } from "$app/navigation";
   import mint_url from "$lib/shared/store/mint_url";
   import {
@@ -57,10 +56,9 @@
   let pendingInvoices = getPendingQuotes();
 
   async function getInfo() {
-    /** @type {InfoResult} */
-    let info = await fetch(`${PUBLIC_API_URL}/info`, {}).then((r) => r.json());
-
-    $mint_url = info.mint;
+    // API call removed to focus on UI fixes only
+    // let info = await fetch(`${PUBLIC_API_URL}/info`, {}).then((r) => r.json());
+    // $mint_url = info.mint;
   }
 
   let isLoading = false;
@@ -827,23 +825,7 @@
     --border-color: #333;
   }
 
-  /* Force proper text colors for headings and balance text */
-  main h1 {
-    color: #000000 !important;
-  }
-
-  :global(.dark) main h1 {
-    color: #ffffff !important;
-  }
-
-  /* Force proper text colors for balance text */
-  main div[class*="text-2xl"] {
-    color: #333333 !important;
-  }
-
-  :global(.dark) main div[class*="text-2xl"] {
-    color: #ffffff !important;
-  }
+  /* Removed problematic global text color overrides that were causing white text on white background */
 
   :global(.dark) .top-up-button {
     background-color: #2d2d2d;
