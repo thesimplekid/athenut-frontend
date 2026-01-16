@@ -885,6 +885,7 @@
   :global(.dark) .copy-invoice-button {
     background: #ffffff;
     color: #1a1a1a;
+    border: none;
   }
 
   :global(.dark) .copy-invoice-button:hover {
@@ -1169,38 +1170,7 @@
     color: #ffffff !important;
   }
 
-  /* Update the copy-invoice-button styles */
-  .copy-invoice-button {
-    background-color: #1a1a1a;
-    color: white;
-    border: none;
-    border-radius: 12px;
-    padding: 12px 24px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-
-  /* Add dark mode styles for copy-invoice-button */
-  :global(.dark) .copy-invoice-button {
-    background-color: #2d2d2d;
-    color: white;
-    border: 2px solid #ffffff;
-  }
-
-  :global(.dark) .copy-invoice-button:hover {
-    background-color: #3a3a3a;
-    border-color: #f0f0f0;
-  }
-
-  :global(.dark) .copy-invoice-button:focus {
-    outline: none;
-  }
+  /* Duplicate styles removed - using the ones defined earlier */
 
 
   :global(body) {

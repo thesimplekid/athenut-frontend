@@ -229,7 +229,7 @@
     </div>
   </header>
 
-  <div class="flex-grow flex flex-col relative">
+  <div class="flex-grow flex flex-col relative search-results-container">
     {#if !isLoading && search_results.length > 0}
       <p
         class="text-sm mb-4 search-aligned tabular-nums"
@@ -449,11 +449,17 @@
   /* Update header and search container layout */
   header {
     padding: 1rem;
+    padding-top: calc(80px + 1rem); /* Navbar height (80px) + padding (1rem) */
     display: flex;
     justify-content: center;
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
+  }
+
+  /* Search results container - consistent top spacing like other pages */
+  .search-results-container {
+    padding-top: 2rem; /* Spacing between header and results */
   }
 
   .search-container {
