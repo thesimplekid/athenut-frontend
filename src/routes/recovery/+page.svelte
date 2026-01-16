@@ -443,25 +443,27 @@
           <p class="text-red-500 mt-2 text-center">{errorMessage}</p>
         {/if}
 
-        <button class="recovery-button-secondary mb-4" on:click={handleRecover} in:scale={{ duration: 300, delay: 500, start: 0.9, easing: elasticOut }}>
-          Paste Recovery Phrase
-        </button>
+        <div class="button-container-right">
+          <button class="recovery-button-secondary" on:click={handleRecover} in:scale={{ duration: 300, delay: 500, start: 0.9, easing: elasticOut }}>
+            Paste Recovery Phrase
+          </button>
 
-        <button
-          class="recovery-button {!isComplete || isRestoring ? 'disabled' : ''}"
-          on:click={handleRestore}
-          disabled={!isComplete || isRestoring}
-          in:scale={{ duration: 300, delay: 600, start: 0.9, easing: elasticOut }}
-        >
-          {#if isRestoring}
-            <div class="spinner-container">
-              <div class="spinner"></div>
-              <span class="ml-2">Restoring...</span>
-            </div>
-          {:else}
-            Restore Wallet
-          {/if}
-        </button>
+          <button
+            class="recovery-button {!isComplete || isRestoring ? 'disabled' : ''}"
+            on:click={handleRestore}
+            disabled={!isComplete || isRestoring}
+            in:scale={{ duration: 300, delay: 600, start: 0.9, easing: elasticOut }}
+          >
+            {#if isRestoring}
+              <div class="spinner-container">
+                <div class="spinner"></div>
+                <span class="ml-2">Restoring...</span>
+              </div>
+            {:else}
+              Restore Wallet
+            {/if}
+          </button>
+        </div>
 
         <div class="divider my-8" in:fade={{ duration: 400, delay: 700 }}>OR</div>
 
@@ -488,38 +490,40 @@
             {/if}
           </div>
 
-          <button
-            class="recovery-button-secondary mb-4"
-            on:click={async () => {
-              try {
-                tokenInput = await navigator.clipboard.readText();
-                tokenError = "";
-              } catch (error) {
-                tokenError =
-                  "Unable to access clipboard. Please grant clipboard permission.";
-                console.error("Clipboard error:", error);
-              }
-            }}
-          >
-            Paste Search Token
-          </button>
+          <div class="button-container-right">
+            <button
+              class="recovery-button-secondary"
+              on:click={async () => {
+                try {
+                  tokenInput = await navigator.clipboard.readText();
+                  tokenError = "";
+                } catch (error) {
+                  tokenError =
+                    "Unable to access clipboard. Please grant clipboard permission.";
+                  console.error("Clipboard error:", error);
+                }
+              }}
+            >
+              Paste Search Token
+            </button>
 
-          <button
-            class="recovery-button mt-4 {!tokenInput.trim() || tokenRestoring
-              ? 'disabled'
-              : ''}"
-            on:click={handleTokenRedeem}
-            disabled={!tokenInput.trim() || tokenRestoring}
-          >
-            {#if tokenRestoring}
-              <div class="spinner-container">
-                <div class="spinner"></div>
-                <span class="ml-2">Redeeming...</span>
-              </div>
-            {:else}
-              Redeem Token
-            {/if}
-          </button>
+            <button
+              class="recovery-button {!tokenInput.trim() || tokenRestoring
+                ? 'disabled'
+                : ''}"
+              on:click={handleTokenRedeem}
+              disabled={!tokenInput.trim() || tokenRestoring}
+            >
+              {#if tokenRestoring}
+                <div class="spinner-container">
+                  <div class="spinner"></div>
+                  <span class="ml-2">Redeeming...</span>
+                </div>
+              {:else}
+                Redeem Token
+              {/if}
+            </button>
+          </div>
         </div>
       </div>
     {/if}
@@ -543,13 +547,11 @@
     margin-bottom: 2rem;
     width: 100%;
     max-width: 800px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .seed-container:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
   }
 
   .seed-word {
@@ -599,20 +601,19 @@
     color: white;
     border: none;
     border-radius: 12px;
-    padding: 16px 32px;
+    padding: 12px 24px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 300px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .recovery-button:hover {
     background: #2a2a2a;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.15);
   }
 
   .recovery-button:active {
@@ -621,7 +622,6 @@
 
   .recovery-button:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1), 0 4px 12px 0 rgba(0, 0, 0, 0.15);
   }
 
   .recovery-button.disabled {
@@ -632,7 +632,6 @@
 
   .recovery-button.disabled:hover {
     transform: none !important;
-    box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
   }
 
   .mb-4 {
@@ -640,28 +639,49 @@
   }
 
   .recovery-button-secondary {
-    background: #1a1a1a;
-    color: white;
-    border: none;
+    background: transparent;
+    color: #1a1a1a;
+    border: 1px solid rgba(226, 232, 240, 0.6);
     border-radius: 12px;
-    padding: 16px 32px;
+    padding: 12px 24px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    width: 100%;
-    max-width: 300px;
-    box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .recovery-button-secondary:hover {
-    background: #2a2a2a;
+    background: rgba(26, 26, 26, 0.05);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.15);
   }
 
   .recovery-button-secondary:active {
     transform: translateY(0);
+  }
+
+  .recovery-button-secondary.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .recovery-button-secondary.disabled:hover {
+    transform: none !important;
+    background: transparent;
+  }
+
+  .button-container-right {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 800px;
+    margin-top: 1rem;
   }
 
   @media (max-width: 640px) {
@@ -691,17 +711,18 @@
     /* Removed unused main-heading styles */
 
     .recovery-button {
-      width: 80%;
-      max-width: 250px;
-      padding: 14px 28px;
+      padding: 12px 20px;
       font-size: 16px;
     }
 
     .recovery-button-secondary {
-      width: 80%;
-      max-width: 250px;
-      padding: 14px 28px;
+      padding: 12px 20px;
       font-size: 16px;
+    }
+
+    .button-container-right {
+      flex-direction: column;
+      align-items: stretch;
     }
   }
 
@@ -742,13 +763,22 @@
   }
 
   :global(.dark) .recovery-button-secondary {
-    background: #ffffff !important;
-    color: #1a1a1a !important;
+    background: transparent;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   :global(.dark) .recovery-button-secondary:hover {
-    background: #e5e5e5 !important;
-    color: #1a1a1a !important;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  :global(.dark) .recovery-button-secondary.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  :global(.dark) .recovery-button-secondary.disabled:hover {
+    background: transparent;
   }
 
   /* Dark mode text colors */
@@ -800,13 +830,11 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .token-input-container:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
   }
 
   .token-input {

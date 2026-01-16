@@ -759,7 +759,6 @@
     justify-content: center;
     gap: 0.5rem;
     min-height: 120px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   }
 
   :global(.dark) .top-up-button {
@@ -783,7 +782,6 @@
 
   .top-up-button:hover {
     transform: translateY(-1px) scale(1.01);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     border-color: rgba(0, 0, 0, 0.1);
     background: rgba(255, 255, 255, 0.95);
   }
@@ -858,21 +856,20 @@
     color: white;
     border: none;
     border-radius: 12px;
-    padding: 16px 32px;
+    padding: 12px 24px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
   }
 
   .copy-invoice-button:hover {
     background: #2a2a2a;
     transform: translateY(-2px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   }
 
   .copy-invoice-button:active {
@@ -1171,17 +1168,16 @@
     background-color: #1a1a1a;
     color: white;
     border: none;
-    border-radius: 9999px;
-    padding: 16px 32px;
-    font-size: 18px;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 3px rgba(26, 26, 26, 0.1);
-    width: 100%;
-    max-width: 300px;
-    position: relative;
-    overflow: hidden;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
   }
 
   /* Add dark mode styles for copy-invoice-button */
@@ -1189,20 +1185,15 @@
     background-color: #2d2d2d;
     color: white;
     border: 2px solid #ffffff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   }
 
   :global(.dark) .copy-invoice-button:hover {
     background-color: #3a3a3a;
     border-color: #f0f0f0;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   }
 
   :global(.dark) .copy-invoice-button:focus {
     outline: none;
-    box-shadow:
-      0 0 0 2px #1a1a1a,
-      0 0 0 4px rgba(255, 255, 255, 0.5);
   }
 
   :global(.dark) .copy-invoice-button::before {

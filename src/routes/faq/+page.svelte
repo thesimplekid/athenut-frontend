@@ -128,13 +128,11 @@
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(226, 232, 240, 0.6);
       overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .faq-item:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
     }
   
     .faq-question {

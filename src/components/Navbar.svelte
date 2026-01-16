@@ -230,7 +230,6 @@
     .navbar.scrolled {
       height: 64px;
       background: rgba(255, 255, 255, 0.95);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
 
     :global(.dark) .navbar {
@@ -240,7 +239,6 @@
 
     :global(.dark) .navbar.scrolled {
       background: rgba(26, 26, 26, 0.95);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
     }
 
     .top-right-container {
@@ -285,12 +283,10 @@
       border-radius: 12px;
       font-size: 14px;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     }
 
     .searches-left:hover {
       transform: translateY(-1px);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
   
     .searches-count {
@@ -309,13 +305,11 @@
       cursor: pointer;
       text-decoration: none;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
     }
 
     .top-up-button:hover {
       background: #2a2a2a;
       transform: translateY(-1px);
-      box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.15);
     }
 
     .top-up-button:active {
@@ -370,7 +364,6 @@
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-radius: 16px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
       min-width: 180px;
       z-index: 52;
       border: 1px solid rgba(0, 0, 0, 0.08);
@@ -428,7 +421,6 @@
     :global(.dark) .top-up-button:hover {
       background-color: #3a3a3a;
       border-color: #f0f0f0;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
     }
   
     :global(.dark) .theme-toggle,

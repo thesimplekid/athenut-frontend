@@ -203,8 +203,8 @@
           {/each}
         </div>
 
-        <div class="flex justify-center w-full">
-          <button class="recovery-button-secondary" on:click={handleCopyPhrase} in:scale={{ duration: 300, delay: 600, start: 0.9, easing: elasticOut }}>
+        <div class="button-container-right">
+          <button class="recovery-button" on:click={handleCopyPhrase} in:scale={{ duration: 300, delay: 600, start: 0.9, easing: elasticOut }}>
             Copy Recovery Phrase
           </button>
         </div>
@@ -226,9 +226,9 @@
             />
           </div>
 
-          <div class="button-row">
+          <div class="button-container-right">
             <button
-              class="recovery-button-secondary mb-4"
+              class="recovery-button-secondary"
               on:click={() => {
                 copyToClipboard(encodedToken);
                 showToast("Token copied to clipboard");
@@ -238,7 +238,7 @@
             </button>
 
             <button
-              class="recovery-button-secondary mb-4"
+              class="recovery-button-secondary"
               on:click={() => {
                 encodedToken = generateToken();
                 showToast("Token refreshed");
@@ -297,13 +297,11 @@
     margin-bottom: 2rem;
     width: 100%;
     max-width: 800px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .seed-container:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
   }
 
   .seed-word {
@@ -405,13 +403,11 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .token-input-container:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
   }
 
   .token-section {
@@ -475,40 +471,91 @@
     border-color: rgba(255, 255, 255, 0.1);
   }
 
-  /* Removed unused recovery-button styles */
-
-  .recovery-button-secondary {
+  .recovery-button {
     background: #1a1a1a;
     color: white;
     border: none;
     border-radius: 12px;
-    padding: 16px 32px;
+    padding: 12px 24px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    width: 100%;
-    max-width: 300px;
-    box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .recovery-button:hover {
+    background: #2a2a2a;
+    transform: translateY(-2px);
+  }
+
+  .recovery-button:active {
+    transform: translateY(0);
+  }
+
+  :global(.dark) .recovery-button {
+    background: #ffffff;
+    color: #1a1a1a;
+  }
+
+  :global(.dark) .recovery-button:hover {
+    background: #f0f0f0;
+  }
+
+  .recovery-button-secondary {
+    background: transparent;
+    color: #1a1a1a;
+    border: 1px solid rgba(226, 232, 240, 0.6);
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .recovery-button-secondary:hover {
-    background: #2a2a2a;
+    background: rgba(26, 26, 26, 0.05);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.15);
   }
 
   .recovery-button-secondary:active {
     transform: translateY(0);
   }
 
+  .recovery-button-secondary.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .recovery-button-secondary.disabled:hover {
+    transform: none !important;
+    background: transparent;
+  }
+
   :global(.dark) .recovery-button-secondary {
-    background: #ffffff;
-    color: #1a1a1a;
+    background: transparent;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   :global(.dark) .recovery-button-secondary:hover {
-    background: #f0f0f0;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  :global(.dark) .recovery-button-secondary.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  :global(.dark) .recovery-button-secondary.disabled:hover {
+    background: transparent;
   }
 
   /* Dark mode gradient buttons maintain same style */
@@ -572,25 +619,27 @@
     background: #4B5563;
   }
   
-  /* Button row styling */
-  .button-row {
+  .button-container-right {
     display: flex;
     flex-direction: row;
-    gap: 1rem;
-    justify-content: center;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
     width: 100%;
     max-width: 800px;
+    margin-top: 1rem;
   }
   
   @media (max-width: 640px) {
-    .button-row {
+    .button-container-right {
       flex-direction: column;
+      align-items: stretch;
       gap: 0.5rem;
     }
     
     .recovery-button-secondary {
       font-size: 16px;
-      padding: 12px 24px;
+      padding: 12px 20px;
     }
   }
 </style>
