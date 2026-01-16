@@ -28,6 +28,8 @@
   import { wordlist } from "@scure/bip39/wordlists/english";
   import { theme } from "$lib/stores/theme";
   import Navbar from "../../components/Navbar.svelte";
+  import { fade, fly, scale } from 'svelte/transition';
+  import { quintOut, elasticOut } from 'svelte/easing';
 
   // Function to generate a mnemonic (matching the one in wallet.js)
   function generateWalletMnemonic() {
@@ -62,11 +64,13 @@
   }
 
   let isLoading = false;
+  let contentReady = false;
 
   onMount(async () => {
     // Debug the proofs to see what's going on
     console.log("Topup Page - onMount");
     debugProofs();
+    setTimeout(() => contentReady = true, 100);
 
     // Initialize the wallet balance - use both approaches
     balance = await getBalance();
@@ -491,89 +495,94 @@
 </svelte:head>
 
 <!-- Update the main container div and add Navbar -->
-<div
-  class="min-h-screen flex flex-col text-gray-800 bg-white dark:bg-[var(--bg-primary)] dark:text-white"
->
-  <Navbar />
-  <main
-    class="flex-grow flex flex-col justify-start items-center px-4 py-8 bg-white dark:bg-[var(--bg-primary)]"
-  >
-    <div class="header-container">
-      <h1 class="text-4xl font-bold mb-2 text-black dark:text-white" style="color: {$theme === 'dark' ? '#ffffff' : '#000000'} !important;">Top Up</h1>
-    </div>
+<div class="page-wrapper">
+  <Navbar {balance} />
 
-    <div
-      class="text-2xl font-semibold text-[#333333] dark:text-white mt-2 mb-4"
-      style="color: {$theme === 'dark' ? '#ffffff' : '#333333'} !important;"
-    >
-      You have {balance} searches left
-      <button
-        class="refresh-balance-button"
-        on:click={() => {
-          balance = forceBalanceRefresh();
-          console.log("Balance refreshed manually:", balance);
-        }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path
-            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-          />
-        </svg>
-      </button>
-    </div>
+  <main class="main-content">
+    {#if contentReady}
+      <div class="content-container" in:fade={{ duration: 600, easing: quintOut }}>
+        <div class="header-section" in:fly={{ y: 20, duration: 500, delay: 200, easing: quintOut }}>
+          <h1 class="page-title">Top Up</h1>
 
-    <p class="text-xl text-[#4b5563] dark:text-[#a0aec0] mb-6">
-      Zap your account with sats to unlock more premium searches.
-    </p>
-
-    <div class="qr-container mt-2">
-      {#if isLoading}
-        <div class="spinner-container">
-          <div class="spinner"></div>
-        </div>
-      {:else if data !== ""}
-        <div class="flex flex-col items-center space-y-4">
-          <div class="qr-info">
-            Purchasing {selectedSearches} searches for {invoice_amount} sats
-          </div>
-          <div class="qr-wrapper">
-            <SvgQR {data} width="300" height="300" />
-          </div>
-          <button
-            type="button"
-            class="copy-invoice-button"
-            on:click={() => customCopy(data)}>Copy Invoice</button
-          >
-        </div>
-      {:else}
-        <div class="top-up-grid">
-          {#each [1, 5, 10, 20, 35, 50] as search_count}
+          <div class="balance-display">
+            <span class="balance-label">You have</span>
+            <span class="balance-amount">{balance}</span>
+            <span class="balance-label">searches left</span>
             <button
-              on:click={() => handleTopUp(search_count)}
-              class="top-up-button"
+              class="refresh-balance-button"
+              on:click={() => {
+                balance = forceBalanceRefresh();
+                console.log("Balance refreshed manually:", balance);
+              }}
             >
-              <div class="text-lg">{search_count} Searches</div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
             </button>
-          {/each}
-        </div>
-      {/if}
-    </div>
+          </div>
 
-    <!-- Transaction History Table -->
-    {#if true}
-      <div class="transaction-history-container">
-        <h2 class="history-title">Recent Invoices</h2>
-        <div class="transaction-table">
+          <p class="tagline">
+            Zap your account with sats to unlock more premium searches.
+          </p>
+        </div>
+
+        <div class="qr-container" in:scale={{ duration: 400, delay: 400, easing: quintOut }}>
+          {#if isLoading}
+            <div class="spinner-container">
+              <div class="spinner"></div>
+            </div>
+          {:else if data !== ""}
+            <div class="qr-section" transition:scale={{ duration: 300, easing: quintOut }}>
+              <div class="qr-info">
+                Purchasing <strong>{selectedSearches} searches</strong> for <strong>{invoice_amount} sats</strong>
+              </div>
+              <div class="qr-wrapper">
+                <SvgQR {data} width="300" height="300" />
+              </div>
+              <button
+                type="button"
+                class="copy-invoice-button"
+                on:click={() => customCopy(data)}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                Copy Invoice
+              </button>
+            </div>
+          {:else}
+            <div class="top-up-grid">
+              {#each [1, 5, 10, 20, 35, 50] as search_count, i}
+                <button
+                  on:click={() => handleTopUp(search_count)}
+                  class="top-up-button"
+                  in:scale={{ duration: 300, delay: 500 + (i * 50), start: 0.8, easing: elasticOut }}
+                >
+                  <div class="search-count">{search_count}</div>
+                  <div class="search-label">{search_count === 1 ? 'Search' : 'Searches'}</div>
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </div>
+
+        <!-- Transaction History Table -->
+        {#if pendingInvoices.length > 0}
+          <div class="transaction-history-container" in:fly={{ y: 30, duration: 500, delay: 900, easing: quintOut }}>
+            <h2 class="history-title">Recent Invoices</h2>
+            <div class="transaction-table">
           {#each pendingInvoices.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) as quote}
             <!-- Transaction row -->
             <div class="transaction-row">
@@ -646,8 +655,10 @@
                 {/if}
               </div>
             </div>
-          {/each}
-        </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
       </div>
     {/if}
   </main>
@@ -657,40 +668,134 @@
 </div>
 
 <style>
+  .page-wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-primary);
+  }
+
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 96px 1rem 2rem;
+    min-height: calc(100vh - 80px);
+  }
+
+  .content-container {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .header-section {
+    text-align: center;
+    margin-bottom: 3rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .page-title {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+  }
+
+  .balance-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+    margin-bottom: 1rem;
+  }
+
+  .balance-label {
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
+  .balance-amount {
+    color: var(--text-primary);
+    font-weight: 400;
+    font-size: 1em;
+  }
+
+  .tagline {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
   .top-up-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr); /* Always 3 columns on desktop */
     gap: 1rem;
+    width: 100%;
     max-width: 800px;
     margin: 0 auto;
-    width: 100%;
-    padding: 0 1rem;
+    padding: 0;
+    box-sizing: border-box;
   }
 
   .top-up-button {
-    background-color: #f0f2f5; /* Lighter shade, closer to white */
-    color: #374151;
-    border: none;
-    border-radius: 8px;
-    padding: 20px;
-    font-size: 16px;
-    font-weight: 600;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--text-primary);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 16px;
+    padding: 24px 20px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 120px;
+    gap: 0.5rem;
+    min-height: 120px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  }
+
+  :global(.dark) .top-up-button {
+    background: rgba(45, 45, 45, 0.8);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .search-count {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .search-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .top-up-button:hover {
-    background-color: #e5e7eb; /* Slightly darker on hover, but still light */
+    transform: translateY(-1px) scale(1.01);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.95);
   }
 
-  .top-up-button:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* Light blue focus ring */
+  :global(.dark) .top-up-button:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(45, 45, 45, 0.95);
+  }
+
+  .top-up-button:active {
+    transform: translateY(0) scale(0.99);
+    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .spinner-container {
@@ -749,56 +854,45 @@
   /* Removed unused button and container styles */
 
   .copy-invoice-button {
-    background-color: #1a1a1a;
+    background: #1a1a1a;
     color: white;
     border: none;
-    border-radius: 9999px;
+    border-radius: 12px;
     padding: 16px 32px;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(26, 26, 26, 0.2);
-    width: 100%;
-    max-width: 300px;
-    position: relative;
-    overflow: hidden;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .copy-invoice-button:hover {
-    background-color: #2a2a2a;
-    box-shadow: 0 4px 8px rgba(26, 26, 26, 0.3);
+    background: #2a2a2a;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   }
 
-  .copy-invoice-button:focus {
-    outline: none;
-    box-shadow:
-      0 0 0 2px rgba(255, 255, 255, 0.5),
-      0 4px 8px rgba(26, 26, 26, 0.3);
+  .copy-invoice-button:active {
+    transform: translateY(0);
   }
 
-  .copy-invoice-button::before {
-    content: "";
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(45deg, #4285f4, #34a853, #fbbc05, #ea4335);
-    z-index: -1;
-    filter: blur(5px);
-    opacity: 0;
-    transition: opacity 0.3s;
+  :global(.dark) .copy-invoice-button {
+    background: #ffffff;
+    color: #1a1a1a;
   }
 
-  .copy-invoice-button:hover::before {
-    opacity: 0.5;
+  :global(.dark) .copy-invoice-button:hover {
+    background: #f0f0f0;
   }
 
   .qr-container {
     min-height: 300px; /* Reduced height */
     width: 100%;
     max-width: 800px;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     justify-content: flex-start; /* Changed from center to flex-start */
@@ -843,27 +937,44 @@
   .refresh-balance-button {
     background: none;
     border: none;
-    color: #666;
+    color: var(--text-secondary);
     cursor: pointer;
-    padding: 4px;
+    padding: 8px;
     margin-left: 8px;
-    vertical-align: middle;
-    border-radius: 4px;
-    transition: all 0.2s ease;
+    border-radius: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .refresh-balance-button:hover {
-    background-color: rgba(0, 0, 0, 0.1);
-    color: #333;
+    background-color: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    transform: rotate(180deg);
   }
 
-  :global(.dark) .refresh-balance-button {
-    color: #a0aec0;
+  .refresh-balance-button:active {
+    transform: rotate(180deg) scale(0.9);
   }
 
-  :global(.dark) .refresh-balance-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
+  .qr-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .qr-info {
+    text-align: center;
+    font-size: 1.125rem;
+    color: var(--text-primary);
+    font-weight: 400;
+  }
+
+  .qr-info strong {
+    font-weight: 700;
+    color: #667eea;
   }
 
   /* QR code specific styles */
@@ -1066,7 +1177,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(26, 26, 26, 0.2);
+    box-shadow: 0 1px 3px rgba(26, 26, 26, 0.1);
     width: 100%;
     max-width: 300px;
     position: relative;
@@ -1078,13 +1189,13 @@
     background-color: #2d2d2d;
     color: white;
     border: 2px solid #ffffff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   }
 
   :global(.dark) .copy-invoice-button:hover {
     background-color: #3a3a3a;
     border-color: #f0f0f0;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   }
 
   :global(.dark) .copy-invoice-button:focus {

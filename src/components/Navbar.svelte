@@ -3,18 +3,25 @@
     import logomark from '/src/logomark.png';
     import { getBalance, forceBalanceRefresh } from '$lib/shared/utils';
     import { onMount } from 'svelte';
-  
+    import { fade, fly, scale } from 'svelte/transition';
+    import { quintOut, elasticOut } from 'svelte/easing';
+
     // If balance prop is provided, use it. Otherwise, will be set in onMount
     export let balance = 0;
-  
+
     let isDropdownOpen = false;
-  
+    let isScrolled = false;
+
     function toggleDropdown() {
       isDropdownOpen = !isDropdownOpen;
     }
-  
+
     function toggleTheme() {
       theme.update((current) => (current === 'light' ? 'dark' : 'light'));
+    }
+
+    function handleScroll() {
+      isScrolled = window.scrollY > 10;
     }
     
     // Always refresh the balance when the component is mounted
@@ -22,7 +29,7 @@
       // Use forceBalanceRefresh to get directly from localStorage
       balance = forceBalanceRefresh();
       console.log('Navbar - balance after forceBalanceRefresh:', balance);
-      
+
       // Set up a listener for storage changes
       const handleStorageChange = (e) => {
         if (e.key === 'proofs') {
@@ -31,13 +38,17 @@
           console.log('Navbar - Updated balance:', balance);
         }
       };
-      
+
       // Add storage listener
       window.addEventListener('storage', handleStorageChange);
-      
+
+      // Add scroll listener
+      window.addEventListener('scroll', handleScroll);
+
       return () => {
-        // Clean up listener when component is destroyed
+        // Clean up listeners when component is destroyed
         window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('scroll', handleScroll);
       };
     });
     
@@ -49,15 +60,15 @@
   </script>
   
   <!-- Navbar HTML -->
-  <div class="h-20 w-full relative">
+  <nav class="navbar" class:scrolled={isScrolled} in:fly={{ y: -50, duration: 600, easing: quintOut }}>
     <!-- Logo -->
-    <a href="/" class="home-link pl-4">
+    <a href="/" class="home-link" in:scale={{ duration: 400, delay: 200, easing: elasticOut }}>
       <img src={logomark} alt="X-Cashu Search Logo" />
     </a>
-  
+
     <!-- Top right info -->
-    <div class="absolute top-4 right-4">
-      <div class="top-right-info">
+    <div class="top-right-container">
+      <div class="top-right-info" in:fly={{ x: 50, duration: 500, delay: 300, easing: quintOut }}>
         <span class="searches-left">
           Searches left: <span class="searches-count">{balance}</span>
         </span>
@@ -125,7 +136,11 @@
           </button>
   
           {#if isDropdownOpen}
-            <div class="dropdown-menu" on:blur={() => (isDropdownOpen = false)}>
+            <div
+              class="dropdown-menu"
+              on:blur={() => (isDropdownOpen = false)}
+              transition:fly={{ y: -10, duration: 200, easing: quintOut }}
+            >
               <a href="/backup" class="dropdown-item">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -188,23 +203,69 @@
         </div>
       </div>
     </div>
-  </div>
-  
+  </nav>
+
   <style>
-    /* Navbar-specific styles */
-  
-    .home-link {
-      position: absolute;
-      top: 1rem;
-      left: 1rem;
-      z-index: 10;
+    /* Navbar-specific styles with motion design */
+
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 80px;
+      width: 100%;
       display: flex;
       align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      z-index: 1000;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-  
+
+    .navbar.scrolled {
+      height: 64px;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    :global(.dark) .navbar {
+      background: rgba(26, 26, 26, 0.8);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    :global(.dark) .navbar.scrolled {
+      background: rgba(26, 26, 26, 0.95);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+    }
+
+    .top-right-container {
+      position: relative;
+    }
+
+    .home-link {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .home-link:hover {
+      transform: scale(1.05);
+    }
+
+    .home-link:active {
+      transform: scale(0.95);
+    }
+
     .home-link img {
       height: 40px;
       width: auto;
+      transition: filter 0.2s ease;
     }
   
     .top-right-info {
@@ -220,9 +281,16 @@
       font-weight: 600;
       color: #4a5568;
       background-color: #f3f4f6;
-      padding: 8px;
-      border-radius: 8px;
-      font-size: 16px;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .searches-left:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
   
     .searches-count {
@@ -231,22 +299,36 @@
     }
   
     .top-up-button {
-      background-color: transparent;
-      color: #4a5568;
-      border: 2px solid #4a5568;
-      border-radius: 6px;
-      padding: 6px 12px;
+      background: #1a1a1a;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s ease;
       text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
     }
-  
+
     .top-up-button:hover {
-      background-color: #f3f4f6;
-      color: #2d3748;
-      border-color: #2d3748;
+      background: #2a2a2a;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.15);
+    }
+
+    .top-up-button:active {
+      transform: translateY(0);
+    }
+
+    :global(.dark) .top-up-button {
+      background: #ffffff;
+      color: #1a1a1a;
+    }
+
+    :global(.dark) .top-up-button:hover {
+      background: #f0f0f0;
     }
   
     .theme-toggle,
@@ -254,18 +336,24 @@
       background: none;
       border: none;
       color: #4a5568;
-      padding: 4px;
+      padding: 8px;
       cursor: pointer;
-      border-radius: 4px;
-      transition: background-color 0.2s;
+      border-radius: 8px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       align-items: center;
       justify-content: center;
     }
-  
+
     .theme-toggle:hover,
     .more-options-button:hover {
       background-color: #f3f4f6;
+      transform: scale(1.1);
+    }
+
+    .theme-toggle:active,
+    .more-options-button:active {
+      transform: scale(0.95);
     }
   
     .dropdown-container {
@@ -278,29 +366,35 @@
       top: 100%;
       right: 0;
       margin-top: 12px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      min-width: 160px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+      min-width: 180px;
       z-index: 52;
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      padding: 4px 0;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      padding: 8px;
+      overflow: hidden;
     }
-  
+
     .dropdown-item {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
       padding: 12px 16px;
       color: #4a5568;
       text-decoration: none;
-      transition: all 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       font-size: 14px;
+      border-radius: 8px;
+      font-weight: 500;
     }
-  
+
     .dropdown-item:hover {
       background-color: #f3f4f6;
       color: #1a1a1a;
+      transform: translateX(4px);
     }
   
     .dropdown-item:first-child {

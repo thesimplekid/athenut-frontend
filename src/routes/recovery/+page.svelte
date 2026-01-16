@@ -21,6 +21,8 @@
   import Navbar from "../../components/Navbar.svelte";
   import { showToast } from "$lib/stores/toast";
   import { mnemonicToSeedSync } from "@scure/bip39";
+  import { fade, fly, scale } from 'svelte/transition';
+  import { quintOut, elasticOut } from 'svelte/easing';
 
   let words = Array(12).fill("");
   let errorMessage = "";
@@ -28,6 +30,7 @@
   let tokenError = "";
   let isRestoring = false; // Track if wallet restoration is in progress
   let tokenRestoring = false; // Track if token redemption is in progress
+  let contentReady = false;
 
   /** @type {CashuWallet|null} */
   let wallet = null;
@@ -380,6 +383,7 @@
     if (savedTheme === "dark") {
       document.documentElement.classList.add("dark");
     }
+    setTimeout(() => contentReady = true, 100);
   });
 
   // Subscribe to theme changes
@@ -404,115 +408,121 @@
   <Navbar />
 
   <main
-    class="flex-grow flex flex-col justify-start items-center px-4 py-8 dark:bg-[var(--bg-primary)]"
+    class="flex-grow flex flex-col justify-start items-center px-4 pt-24 pb-8 dark:bg-[var(--bg-primary)]"
   >
-    <h1
-      class="text-4xl font-bold mb-2 text-center text-gray-800 dark:text-white"
-      style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;"
-    >
-      Recovery
-    </h1>
+    {#if contentReady}
+      <div in:fade={{ duration: 600, easing: quintOut }}>
+        <h1
+          class="text-4xl font-bold mb-2 text-center text-gray-800 dark:text-white"
+          style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;"
+          in:fly={{ y: 20, duration: 500, delay: 200, easing: quintOut }}
+        >
+          Recovery
+        </h1>
 
-    <p class="text-xl text-gray-600 dark:text-gray-500 mb-6">
-      Enter your 12-word recovery phrase to restore your searches.
-    </p>
+        <p class="text-xl text-gray-600 dark:text-gray-500 mb-6" in:fly={{ y: 20, duration: 500, delay: 300, easing: quintOut }}>
+          Enter your 12-word recovery phrase to restore your searches.
+        </p>
 
-    <div class="seed-container">
-      {#each words as word, i}
-        <div class="seed-word">
-          <span class="word-number">{i + 1}</span>
-          <input
-            type="text"
-            class="word-text"
-            bind:value={words[i]}
-            placeholder="Enter word"
-          />
-          <div class="underline"></div>
+        <div class="seed-container" in:scale={{ duration: 400, delay: 400, start: 0.95, easing: quintOut }}>
+          {#each words as word, i}
+            <div class="seed-word">
+              <span class="word-number">{i + 1}</span>
+              <input
+                type="text"
+                class="word-text"
+                bind:value={words[i]}
+                placeholder="Enter word"
+              />
+              <div class="underline"></div>
+            </div>
+          {/each}
         </div>
-      {/each}
-    </div>
 
-    {#if errorMessage}
-      <p class="text-red-500 mt-2 text-center">{errorMessage}</p>
-    {/if}
-
-    <button class="recovery-button-secondary mb-4" on:click={handleRecover}>
-      Paste Recovery Phrase
-    </button>
-
-    <button
-      class="recovery-button {!isComplete || isRestoring ? 'disabled' : ''}"
-      on:click={handleRestore}
-      disabled={!isComplete || isRestoring}
-    >
-      {#if isRestoring}
-        <div class="spinner-container">
-          <div class="spinner"></div>
-          <span class="ml-2">Restoring...</span>
-        </div>
-      {:else}
-        Restore Wallet
-      {/if}
-    </button>
-
-    <div class="divider my-8">OR</div>
-
-    <div class="token-section w-full max-w-800px flex flex-col items-center">
-      <h2
-        class="text-2xl font-bold mb-4 text-center text-gray-800 dark:text-white"
-        style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;"
-      >
-        Redeem Search Token
-      </h2>
-
-      <div
-        class="token-input-container seed-container"
-        style="display: block; padding: 1rem;"
-      >
-        <input
-          type="text"
-          class="word-text"
-          bind:value={tokenInput}
-          placeholder="Enter your Cashu token"
-        />
-        {#if tokenError}
-          <p class="text-red-500 mt-2 text-center">{tokenError}</p>
+        {#if errorMessage}
+          <p class="text-red-500 mt-2 text-center">{errorMessage}</p>
         {/if}
-      </div>
 
-      <button
-        class="recovery-button-secondary mb-4"
-        on:click={async () => {
-          try {
-            tokenInput = await navigator.clipboard.readText();
-            tokenError = "";
-          } catch (error) {
-            tokenError =
-              "Unable to access clipboard. Please grant clipboard permission.";
-            console.error("Clipboard error:", error);
-          }
-        }}
-      >
-        Paste Search Token
-      </button>
+        <button class="recovery-button-secondary mb-4" on:click={handleRecover} in:scale={{ duration: 300, delay: 500, start: 0.9, easing: elasticOut }}>
+          Paste Recovery Phrase
+        </button>
 
-      <button
-        class="recovery-button mt-4 {!tokenInput.trim() || tokenRestoring
-          ? 'disabled'
-          : ''}"
-        on:click={handleTokenRedeem}
-        disabled={!tokenInput.trim() || tokenRestoring}
-      >
-        {#if tokenRestoring}
-          <div class="spinner-container">
-            <div class="spinner"></div>
-            <span class="ml-2">Redeeming...</span>
+        <button
+          class="recovery-button {!isComplete || isRestoring ? 'disabled' : ''}"
+          on:click={handleRestore}
+          disabled={!isComplete || isRestoring}
+          in:scale={{ duration: 300, delay: 600, start: 0.9, easing: elasticOut }}
+        >
+          {#if isRestoring}
+            <div class="spinner-container">
+              <div class="spinner"></div>
+              <span class="ml-2">Restoring...</span>
+            </div>
+          {:else}
+            Restore Wallet
+          {/if}
+        </button>
+
+        <div class="divider my-8" in:fade={{ duration: 400, delay: 700 }}>OR</div>
+
+        <div class="token-section w-full max-w-800px flex flex-col items-center" in:fly={{ y: 30, duration: 500, delay: 800, easing: quintOut }}>
+          <h2
+            class="text-2xl font-bold mb-4 text-center text-gray-800 dark:text-white"
+            style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;"
+          >
+            Redeem Search Token
+          </h2>
+
+          <div
+            class="token-input-container seed-container"
+            style="display: block; padding: 1rem;"
+          >
+            <input
+              type="text"
+              class="word-text"
+              bind:value={tokenInput}
+              placeholder="Enter your Cashu token"
+            />
+            {#if tokenError}
+              <p class="text-red-500 mt-2 text-center">{tokenError}</p>
+            {/if}
           </div>
-        {:else}
-          Redeem Token
-        {/if}
-      </button>
-    </div>
+
+          <button
+            class="recovery-button-secondary mb-4"
+            on:click={async () => {
+              try {
+                tokenInput = await navigator.clipboard.readText();
+                tokenError = "";
+              } catch (error) {
+                tokenError =
+                  "Unable to access clipboard. Please grant clipboard permission.";
+                console.error("Clipboard error:", error);
+              }
+            }}
+          >
+            Paste Search Token
+          </button>
+
+          <button
+            class="recovery-button mt-4 {!tokenInput.trim() || tokenRestoring
+              ? 'disabled'
+              : ''}"
+            on:click={handleTokenRedeem}
+            disabled={!tokenInput.trim() || tokenRestoring}
+          >
+            {#if tokenRestoring}
+              <div class="spinner-container">
+                <div class="spinner"></div>
+                <span class="ml-2">Redeeming...</span>
+              </div>
+            {:else}
+              Redeem Token
+            {/if}
+          </button>
+        </div>
+      </div>
+    {/if}
   </main>
 
   <Footer />
@@ -525,11 +535,21 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
     padding: 2rem;
-    background: #f0f2f5;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.6);
     border-radius: 24px;
     margin-bottom: 2rem;
     width: 100%;
     max-width: 800px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .seed-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
   }
 
   .seed-word {
@@ -575,65 +595,44 @@
   }
 
   .recovery-button {
-    background-color: #1a1a1a;
+    background: #1a1a1a;
     color: white;
     border: none;
-    border-radius: 9999px;
+    border-radius: 12px;
     padding: 16px 32px;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(26, 26, 26, 0.2);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 300px;
-    position: relative;
-    overflow: hidden;
   }
 
   .recovery-button:hover {
-    background-color: #2a2a2a;
-    box-shadow: 0 4px 8px rgba(26, 26, 26, 0.3);
+    background: #2a2a2a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.15);
+  }
+
+  .recovery-button:active {
+    transform: translateY(0);
   }
 
   .recovery-button:focus {
     outline: none;
-    box-shadow:
-      0 0 0 2px rgba(255, 255, 255, 0.5),
-      0 4px 8px rgba(26, 26, 26, 0.3);
-  }
-
-  .recovery-button::before {
-    content: "";
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(45deg, #4285f4, #34a853, #fbbc05, #ea4335);
-    z-index: -1;
-    filter: blur(5px);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-
-  .recovery-button:hover::before {
-    opacity: 0.5;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1), 0 4px 12px 0 rgba(0, 0, 0, 0.15);
   }
 
   .recovery-button.disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    background-color: #666;
+    transform: none !important;
   }
 
   .recovery-button.disabled:hover {
-    background-color: #666;
-    box-shadow: 0 2px 4px rgba(26, 26, 26, 0.2);
-  }
-
-  .recovery-button.disabled::before {
-    display: none;
+    transform: none !important;
+    box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
   }
 
   .mb-4 {
@@ -641,21 +640,28 @@
   }
 
   .recovery-button-secondary {
-    background-color: transparent;
-    color: #666;
+    background: #1a1a1a;
+    color: white;
     border: none;
-    border-radius: 9999px;
+    border-radius: 12px;
     padding: 16px 32px;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
     max-width: 300px;
+    box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
   }
 
   .recovery-button-secondary:hover {
-    color: #1a1a1a;
+    background: #2a2a2a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.15);
+  }
+
+  .recovery-button-secondary:active {
+    transform: translateY(0);
   }
 
   @media (max-width: 640px) {
@@ -710,7 +716,8 @@
   }
 
   :global(.dark) .seed-container {
-    background-color: #2d2d2d !important;
+    background: rgba(45, 45, 45, 0.6) !important;
+    border-color: rgba(255, 255, 255, 0.1);
   }
 
   :global(.dark) .word-number {
@@ -723,28 +730,36 @@
 
   /* Removed unused dark mode main-heading styles */
 
+  /* Dark mode button styles - ensure high contrast */
   :global(.dark) .recovery-button {
-    background-color: #2d2d2d;
+    background: #ffffff !important;
+    color: #1a1a1a !important;
+  }
+
+  :global(.dark) .recovery-button:hover {
+    background: #e5e5e5 !important;
+    color: #1a1a1a !important;
   }
 
   :global(.dark) .recovery-button-secondary {
-    color: #a0aec0;
+    background: #ffffff !important;
+    color: #1a1a1a !important;
   }
 
   :global(.dark) .recovery-button-secondary:hover {
-    color: #ffffff;
+    background: #e5e5e5 !important;
+    color: #1a1a1a !important;
   }
 
-  /* Removed unused dark mode back-button styles */
-
-  /* Add dark mode text color for headings */
-  :global(.dark) h1 {
-    color: #ffffff;
+  /* Dark mode text colors */
+  :global(.dark) h1,
+  :global(.dark) h2 {
+    color: #ffffff !important;
   }
 
-  /* If you also want to ensure the description text below is properly colored */
-  :global(.dark) .text-gray-600 {
-    color: #a0aec0;
+  :global(.dark) .text-gray-600,
+  :global(.dark) .text-gray-500 {
+    color: #a0aec0 !important;
   }
 
   .divider {
@@ -777,11 +792,21 @@
     width: 100%;
     max-width: 800px;
     padding: 2rem;
-    background: #f0f2f5;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.6);
     border-radius: 24px;
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .token-input-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
   }
 
   .token-input {
@@ -801,7 +826,8 @@
 
   /* Dark mode styles */
   :global(.dark) .token-input-container {
-    background-color: #2d2d2d;
+    background: rgba(45, 45, 45, 0.6) !important;
+    border-color: rgba(255, 255, 255, 0.1);
   }
 
   :global(.dark) .token-input {
@@ -890,9 +916,9 @@
     margin-left: 0.5rem;
   }
 
-  /* Dark mode spinner */
+  /* Dark mode spinner - darker for white button background */
   :global(.dark) .spinner {
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-top: 2px solid white;
+    border: 2px solid rgba(26, 26, 26, 0.2);
+    border-top: 2px solid #1a1a1a;
   }
 </style>

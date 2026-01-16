@@ -59,6 +59,7 @@
     font-weight: 400;
     position: relative;
     margin-top: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .footer-content {
@@ -99,11 +100,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .github-link:hover {
-    opacity: 0.7;
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+
+  .github-link:active {
+    transform: scale(0.95);
   }
 
   .github-icon {
