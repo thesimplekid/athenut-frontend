@@ -70,7 +70,7 @@
     <div class="top-right-container">
       <div class="top-right-info" in:fly={{ x: 50, duration: 500, delay: 300, easing: quintOut }}>
         <span class="searches-left">
-          Searches left: <span class="searches-count">{balance}</span>
+          Searches left: <span class="searches-count tabular-nums">{balance}</span>
         </span>
         <a href="/topup" class="top-up-button">Top Up</a>
   
@@ -121,7 +121,7 @@
   
         <!-- Dropdown menu -->
         <div class="dropdown-container">
-          <button class="more-options-button" on:click={toggleDropdown}>
+          <button class="more-options-button" on:click={toggleDropdown} aria-label="More options">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
@@ -223,8 +223,9 @@
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-      z-index: 1000;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 50;
+      /* Only animate height and background opacity, not backdrop-filter */
+      transition: height 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .navbar.scrolled {
@@ -365,7 +366,7 @@
       -webkit-backdrop-filter: blur(12px);
       border-radius: 16px;
       min-width: 180px;
-      z-index: 52;
+      z-index: 51;
       border: 1px solid rgba(0, 0, 0, 0.08);
       padding: 8px;
       overflow: hidden;

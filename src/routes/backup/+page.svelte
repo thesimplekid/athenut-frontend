@@ -122,7 +122,7 @@
 </svelte:head>
 
 <div
-  class="min-h-screen flex flex-col text-gray-800 bg-white dark:bg-[var(--bg-primary)] dark:text-white"
+  class="min-h-dvh flex flex-col text-gray-800 bg-white dark:bg-[var(--bg-primary)] dark:text-white"
 >
   <Navbar />
   <main class="flex-grow flex flex-col justify-start items-center px-4 pt-24 pb-8">
@@ -134,7 +134,7 @@
           </h1>
 
           <div class="absolute right-0 top-0">
-            <button class="visibility-toggle" on:click={toggleBlur}>
+            <button class="visibility-toggle" on:click={toggleBlur} aria-label={isBlurred ? "Show recovery phrase" : "Hide recovery phrase"}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -164,7 +164,7 @@
           </div>
         </div>
 
-        <div class="text-2xl font-semibold text-gray-900 dark:text-white mt-2 mb-4 text-center" style="color: {$theme === 'dark' ? '#ffffff' : '#111827'} !important;" in:fly={{ y: 20, duration: 500, delay: 300, easing: quintOut }}>
+          <div class="text-2xl font-semibold text-gray-900 dark:text-white mt-2 mb-4 text-center tabular-nums" style="color: {$theme === 'dark' ? '#ffffff' : '#111827'} !important;" in:fly={{ y: 20, duration: 500, delay: 300, easing: quintOut }}>
           You have {balance} searches left
           <button
             class="refresh-balance-button"
@@ -172,6 +172,7 @@
               balance = forceBalanceRefresh();
               console.log('Balance refreshed manually:', balance);
             }}
+            aria-label="Refresh balance"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -297,7 +298,8 @@
     margin-bottom: 2rem;
     width: 100%;
     max-width: 800px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Only animate transform, not backdrop-filter */
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .seed-container:hover {
@@ -403,7 +405,8 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Only animate transform, not backdrop-filter */
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .token-input-container:hover {
@@ -570,7 +573,7 @@
     margin-left: 8px;
     vertical-align: middle;
     border-radius: 8px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: inline-flex;
     align-items: center;
     justify-content: center;

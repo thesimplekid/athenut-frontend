@@ -403,7 +403,7 @@
 </svelte:head>
 
 <div
-  class="min-h-screen flex flex-col text-gray-800 bg-white relative dark:bg-[var(--bg-primary)] dark:text-white"
+  class="min-h-dvh flex flex-col text-gray-800 bg-white relative dark:bg-[var(--bg-primary)] dark:text-white"
 >
   <Navbar />
 
@@ -547,7 +547,8 @@
     margin-bottom: 2rem;
     width: 100%;
     max-width: 800px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Only animate transform, not backdrop-filter */
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .seed-container:hover {
@@ -830,7 +831,8 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Only animate transform, not backdrop-filter */
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .token-input-container:hover {

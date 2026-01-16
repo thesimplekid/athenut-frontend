@@ -506,7 +506,7 @@
 
           <div class="balance-display">
             <span class="balance-label">You have</span>
-            <span class="balance-amount">{balance}</span>
+            <span class="balance-amount tabular-nums">{balance}</span>
             <span class="balance-label">searches left</span>
             <button
               class="refresh-balance-button"
@@ -514,6 +514,7 @@
                 balance = forceBalanceRefresh();
                 console.log("Balance refreshed manually:", balance);
               }}
+              aria-label="Refresh balance"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -554,7 +555,9 @@
               <button
                 type="button"
                 class="copy-invoice-button"
-                on:click={() => customCopy(data)}>
+                on:click={() => customCopy(data)}
+                aria-label="Copy invoice"
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -586,7 +589,7 @@
           {#each pendingInvoices.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) as quote}
             <!-- Transaction row -->
             <div class="transaction-row">
-              <div class="amount-cell">
+              <div class="amount-cell tabular-nums">
                 {quote.amount}
                 {quote.amount === 1 ? "search" : "searches"}
               </div>
@@ -612,6 +615,7 @@
                 <button
                   class="copy-button"
                   on:click={() => customCopy(quote.invoice)}
+                  aria-label="Copy invoice"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -634,6 +638,7 @@
                   <button
                     class="refresh-button"
                     on:click={() => handleRefresh(quote.id)}
+                    aria-label="Refresh quote"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -669,7 +674,7 @@
 
 <style>
   .page-wrapper {
-    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     background-color: var(--bg-primary);
@@ -752,7 +757,8 @@
     border-radius: 16px;
     padding: 24px 20px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Only animate transform and border, not backdrop-filter */
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -805,7 +811,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    background: rgba(255, 255, 255, 0.95);
   }
 
   .spinner-container::before {
@@ -1002,7 +1008,7 @@
   .transaction-history-container {
     width: 100%;
     max-width: 800px;
-    margin-top: 2rem;
+    margin: 2rem auto 0;
   }
 
   .history-title {
@@ -1196,9 +1202,6 @@
     outline: none;
   }
 
-  :global(.dark) .copy-invoice-button::before {
-    background: linear-gradient(45deg, #2d2d2d, #3a3a3a, #4a4a4a, #5a5a5a);
-  }
 
   :global(body) {
     overflow-x: hidden;

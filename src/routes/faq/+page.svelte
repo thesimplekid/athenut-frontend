@@ -57,17 +57,17 @@
     <meta name="description" content="Frequently asked questions about Athenut's privacy-preserving web search." />
   </svelte:head>
   
-  <div class="min-h-screen flex flex-col text-gray-800 relative">
+  <div class="min-h-dvh flex flex-col text-gray-800 relative">
     <Navbar />
 
     <main class="flex-grow flex flex-col items-center px-4 pt-24 pb-8">
       {#if contentReady}
         <div class="w-full max-w-3xl">
-          <h1 class="text-4xl font-bold mb-2 text-center" in:fly={{ y: 20, duration: 500, delay: 200, easing: quintOut }}>
+          <h1 class="text-4xl font-bold mb-2 text-center text-balance" in:fly={{ y: 20, duration: 500, delay: 200, easing: quintOut }}>
             Frequently Asked Questions
           </h1>
 
-          <p class="text-xl text-gray-600 text-center mb-8" in:fly={{ y: 20, duration: 500, delay: 300, easing: quintOut }}>
+          <p class="text-xl text-gray-600 text-center mb-8 text-pretty" in:fly={{ y: 20, duration: 500, delay: 300, easing: quintOut }}>
             Find answers to common questions about using Athenut.
           </p>
 
@@ -99,7 +99,7 @@
                   </svg>
                 </button>
                 {#if expandedQuestions.includes(index)}
-                  <div class="faq-answer" transition:slide={{ duration: 300, easing: quintOut }}>
+                  <div class="faq-answer text-pretty" transition:slide={{ duration: 300, easing: quintOut }}>
                     {faq.answer}
                   </div>
                 {/if}
@@ -128,7 +128,8 @@
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(226, 232, 240, 0.6);
       overflow: hidden;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      /* Only animate transform, not backdrop-filter */
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .faq-item:hover {
@@ -162,7 +163,7 @@
     }
   
     .arrow-icon {
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       color: #667eea;
     }
 

@@ -27,7 +27,7 @@
         color: #1a1a1a;
         padding: 1rem 1.5rem;
         border-radius: 12px;
-        z-index: 9999;
+        z-index: 60;
         border: 1px solid rgba(0, 0, 0, 0.08);
         min-width: 200px;
         max-width: 90vw;
