@@ -1,9 +1,13 @@
 <script>
-    import { slide } from 'svelte/transition';
+    import { slide, fade, fly, scale } from 'svelte/transition';
+    import { quintOut } from 'svelte/easing';
+    import { onMount } from 'svelte';
     import { theme } from "$lib/stores/theme";
     import Footer from "../../components/Footer.svelte";
     import Navbar from "../../components/Navbar.svelte";
-  
+
+    let contentReady = false;
+
     // FAQ data structure
     const faqs = [
       {
@@ -42,6 +46,10 @@
         expandedQuestions = [...expandedQuestions, index];
       }
     }
+
+    onMount(() => {
+      setTimeout(() => contentReady = true, 100);
+    });
   </script>
   
   <svelte:head>
@@ -49,57 +57,59 @@
     <meta name="description" content="Frequently asked questions about Athenut's privacy-preserving web search." />
   </svelte:head>
   
-  <div class="min-h-screen flex flex-col text-gray-800 relative">
+  <div class="min-h-dvh flex flex-col text-gray-800 relative">
     <Navbar />
-  
-    <main class="flex-grow flex flex-col items-center px-4 py-8">
-      <div class="w-full max-w-3xl">
-        <h1 class="text-4xl font-bold mb-2 text-center">
-          Frequently Asked Questions
-        </h1>
-        
-        <p class="text-xl text-gray-600 text-center mb-8">
-          Find answers to common questions about using Athenut.
-        </p>
-  
-        <div class="faq-container">
-          {#each faqs as faq, index}
-            <div class="faq-item">
-              <button
-                class="faq-question"
-                class:expanded={expandedQuestions.includes(index)}
-                on:click={() => toggleQuestion(index)}
-              >
-                <span>{faq.question}</span>
-                <svg
-                  class="arrow-icon"
-                  class:rotated={expandedQuestions.includes(index)}
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
+
+    <main class="flex-grow flex flex-col items-center px-4 pt-24 pb-8">
+      {#if contentReady}
+        <div class="w-full max-w-3xl">
+          <h1 class="text-4xl font-bold mb-2 text-center text-balance" in:fly={{ y: 12, duration: 320, delay: 90, easing: quintOut }}>
+            Frequently Asked Questions
+          </h1>
+
+          <p class="text-xl text-gray-600 text-center mb-8 text-pretty" in:fly={{ y: 12, duration: 320, delay: 140, easing: quintOut }}>
+            Find answers to common questions about using Athenut.
+          </p>
+
+          <div class="faq-container" in:fade={{ duration: 320, delay: 170, easing: quintOut }}>
+            {#each faqs as faq, index}
+              <div class="faq-item">
+                <button
+                  class="faq-question"
+                  class:expanded={expandedQuestions.includes(index)}
+                  on:click={() => toggleQuestion(index)}
                 >
-                  <path
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-              {#if expandedQuestions.includes(index)}
-                <div class="faq-answer" transition:slide>
-                  {faq.answer}
-                </div>
-              {/if}
-            </div>
-          {/each}
+                  <span>{faq.question}</span>
+                  <svg
+                    class="arrow-icon"
+                    class:rotated={expandedQuestions.includes(index)}
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                  >
+                    <path
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+                {#if expandedQuestions.includes(index)}
+                  <div class="faq-answer text-pretty" transition:slide={{ duration: 220, easing: quintOut }}>
+                    {faq.answer}
+                  </div>
+                {/if}
+              </div>
+            {/each}
+          </div>
         </div>
-      </div>
+      {/if}
     </main>
-  
+
     <Footer />
   </div>
   
@@ -112,9 +122,18 @@
   
     .faq-item {
       margin-bottom: 1rem;
-      border-radius: 12px;
-      background-color: #f0f2f5;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(226, 232, 240, 0.6);
       overflow: hidden;
+      /* Only animate transform, not backdrop-filter */
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .faq-item:hover {
+      transform: translateY(-1px);
     }
   
     .faq-question {
@@ -128,7 +147,13 @@
       border: none;
       text-align: left;
       font-weight: 600;
-      color: var(--text-primary);
+      font-size: 1.1rem;
+      color: var(--text-primary, #1f2937);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .faq-question:hover {
+      color: #667eea;
     }
   
     .faq-answer {
@@ -138,16 +163,18 @@
     }
   
     .arrow-icon {
-      transition: transform 0.3s ease;
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #667eea;
     }
-  
+
     .arrow-icon.rotated {
       transform: rotate(180deg);
     }
   
     /* Dark mode styles */
     :global(.dark) .faq-item {
-      background-color: #2d2d2d;
+      background: rgba(45, 45, 45, 0.6);
+      border-color: rgba(255, 255, 255, 0.1);
     }
   
     :global(.dark) .faq-question {

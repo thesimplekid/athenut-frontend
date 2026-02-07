@@ -11,15 +11,16 @@
   import Navbar from "../../components/Navbar.svelte";
   import { getBalance, debugProofs, getProofs, forceBalanceRefresh } from "$lib/shared/utils";
   import { getEncodedTokenV4 } from "@cashu/cashu-ts";
+  import { fade, fly, scale } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
 
   // Sample words (these should come from your app's logic later)
   const words = $seed.trim().split(/\s+/);
 
   let isBlurred = true;
-  // Initialize balance
   let balance = 0;
-  // Initialize encoded token
   let encodedToken = "";
+  let contentReady = false;
 
   function toggleBlur() {
     isBlurred = !isBlurred;
@@ -60,17 +61,16 @@
   }
 
   onMount(async () => {
-    // Debug the proofs to see what's going on
     console.log('Backup Page - onMount');
     debugProofs();
-    
-    // Initialize the wallet balance - use both approaches
+
     balance = await getBalance();
     console.log('Balance after getBalance():', balance);
-    
-    // Force a direct refresh from localStorage
+
     balance = forceBalanceRefresh();
     console.log('Balance after forceBalanceRefresh():', balance);
+
+    setTimeout(() => contentReady = true, 100);
     
     // Log the actual proofs for debugging
     const proofs = getProofs();
@@ -122,128 +122,135 @@
 </svelte:head>
 
 <div
-  class="min-h-screen flex flex-col text-gray-800 bg-white dark:bg-[var(--bg-primary)] dark:text-white"
+  class="min-h-dvh flex flex-col text-gray-800 bg-white dark:bg-[var(--bg-primary)] dark:text-white"
 >
   <Navbar />
-  <main class="flex-grow flex flex-col justify-start items-center px-4 py-8">
-    <div class="relative w-full max-w-[800px]">
-      <h1 class="text-4xl font-bold mb-2 text-center text-gray-800 dark:text-white" style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;">
-        Backup
-      </h1>
+  <main class="flex-grow flex flex-col justify-start items-center px-4 pt-24 pb-8">
+    {#if contentReady}
+      <div class="relative w-full max-w-[800px]" in:fade={{ duration: 360, easing: quintOut }}>
+        <div in:fly={{ y: 12, duration: 320, delay: 90, easing: quintOut }}>
+          <h1 class="text-4xl font-bold mb-2 text-center text-gray-800 dark:text-white" style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;">
+            Backup
+          </h1>
 
-      <div class="absolute right-0 top-0">
-        <button class="visibility-toggle" on:click={toggleBlur}>
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            width="24" 
-            height="24" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            stroke-width="2" 
-            stroke-linecap="round" 
-            stroke-linejoin="round" 
-            class="eye-icon"
-          >
-            {#if isBlurred}
-              <!-- Closed eye -->
-              <path d="m15 18-.722-3.25"/>
-              <path d="M2 8a10.645 10.645 0 0 0 20 0"/>
-              <path d="m20 15-1.726-2.05"/>
-              <path d="m4 15 1.726-2.05"/>
-              <path d="m9 18 .722-3.25"/>
-            {:else}
-              <!-- Open eye -->
-              <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/>
-              <circle cx="12" cy="12" r="3"/>
-            {/if}
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <div class="text-2xl font-semibold text-gray-900 dark:text-white mt-2 mb-4" style="color: {$theme === 'dark' ? '#ffffff' : '#111827'} !important;">
-      You have {balance} searches left
-      <button 
-        class="refresh-balance-button"
-        on:click={() => {
-          balance = forceBalanceRefresh();
-          console.log('Balance refreshed manually:', balance);
-        }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg" 
-          width="16" 
-          height="16" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          stroke-width="2" 
-          stroke-linecap="round" 
-          stroke-linejoin="round"
-        >
-          <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-        </svg>
-      </button>
-    </div>
-
-    <p class="text-xl text-gray-600 dark:text-[#a0aec0] mb-6">
-      Save your secret recovery phrase in a secure place that only you control.
-    </p>
-
-    <div class="seed-container">
-      {#each words as word, i}
-        <div class="seed-word">
-          <span class="word-number">{i + 1}</span>
-          <span class="word-text" class:blurred={isBlurred}>{word}</span>
-          <div class="underline"></div>
+          <div class="absolute right-0 top-0">
+            <button class="visibility-toggle" on:click={toggleBlur} aria-label={isBlurred ? "Show recovery phrase" : "Hide recovery phrase"}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="eye-icon"
+              >
+                {#if isBlurred}
+                  <!-- Closed eye -->
+                  <path d="m15 18-.722-3.25"/>
+                  <path d="M2 8a10.645 10.645 0 0 0 20 0"/>
+                  <path d="m20 15-1.726-2.05"/>
+                  <path d="m4 15 1.726-2.05"/>
+                  <path d="m9 18 .722-3.25"/>
+                {:else}
+                  <!-- Open eye -->
+                  <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/>
+                  <circle cx="12" cy="12" r="3"/>
+                {/if}
+              </svg>
+            </button>
+          </div>
         </div>
-      {/each}
-    </div>
 
-    <button class="recovery-button-secondary" on:click={handleCopyPhrase}>
-      Copy Recovery Phrase
-    </button>
+          <div class="text-2xl font-semibold text-gray-900 dark:text-white mt-2 mb-4 text-center tabular-nums" style="color: {$theme === 'dark' ? '#ffffff' : '#111827'} !important;" in:fly={{ y: 10, duration: 300, delay: 130, easing: quintOut }}>
+          You have {balance} searches left
+          <button
+            class="refresh-balance-button"
+            on:click={() => {
+              balance = forceBalanceRefresh();
+              console.log('Balance refreshed manually:', balance);
+            }}
+            aria-label="Refresh balance"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+          </button>
+        </div>
 
-    <div class="divider my-8">OR</div>
+        <p class="text-xl text-gray-600 dark:text-[#a0aec0] mb-6 text-center" in:fly={{ y: 10, duration: 300, delay: 160, easing: quintOut }}>
+          Save your secret recovery phrase in a secure place that only you control.
+        </p>
 
-    <div class="token-section w-full max-w-800px flex flex-col items-center">
-      <h2 class="text-2xl font-bold mb-4 text-center text-gray-800 dark:text-white" style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;">
-        Export Search Token
-      </h2>
-      
-      <div class="token-input-container seed-container" style="display: block; padding: 1rem;">
-        <input
-          type="text"
-          bind:value={encodedToken}
-          class="word-text"
-          readonly
-          class:blurred={isBlurred}
-        />
+        <div class="seed-container" in:scale={{ duration: 280, delay: 200, start: 0.97, easing: quintOut }}>
+          {#each words as word, i}
+            <div class="seed-word">
+              <span class="word-number">{i + 1}</span>
+              <span class="word-text" class:blurred={isBlurred}>{word}</span>
+              <div class="underline"></div>
+            </div>
+          {/each}
+        </div>
+
+        <div class="button-container-right">
+          <button class="recovery-button" on:click={handleCopyPhrase} in:scale={{ duration: 220, delay: 220, start: 0.97, easing: quintOut }}>
+            Copy Recovery Phrase
+          </button>
+        </div>
+
+        <div class="divider my-8" in:fade={{ duration: 300, delay: 240 }}>OR</div>
+
+        <div class="token-section w-full max-w-800px flex flex-col items-center" in:fly={{ y: 12, duration: 320, delay: 260, easing: quintOut }}>
+          <h2 class="text-2xl font-bold mb-4 text-center text-gray-800 dark:text-white" style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;">
+            Export Search Token
+          </h2>
+
+          <div class="token-input-container seed-container" style="display: block; padding: 1rem;">
+            <input
+              type="text"
+              bind:value={encodedToken}
+              class="word-text"
+              readonly
+              class:blurred={isBlurred}
+            />
+          </div>
+
+          <div class="button-container-right">
+            <button
+              class="recovery-button-secondary"
+              on:click={() => {
+                copyToClipboard(encodedToken);
+                showToast("Token copied to clipboard");
+              }}
+            >
+              Copy Token
+            </button>
+
+            <button
+              class="recovery-button-secondary"
+              on:click={() => {
+                encodedToken = generateToken();
+                showToast("Token refreshed");
+              }}
+            >
+              Refresh Token
+            </button>
+          </div>
+        </div>
       </div>
-      
-      <div class="button-row">
-        <button 
-          class="recovery-button-secondary mb-4" 
-          on:click={() => {
-            copyToClipboard(encodedToken);
-            showToast("Token copied to clipboard");
-          }}
-        >
-          Copy Token
-        </button>
-        
-        <button 
-          class="recovery-button-secondary mb-4" 
-          on:click={() => {
-            encodedToken = generateToken();
-            showToast("Token refreshed");
-          }}
-        >
-          Refresh Token
-        </button>
-      </div>
-    </div>
+    {/if}
   </main>
 
   <Footer />
@@ -283,11 +290,20 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
     padding: 2rem;
-    background: #f0f2f5;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.6);
     border-radius: 24px;
     margin-bottom: 2rem;
     width: 100%;
     max-width: 800px;
+    /* Only animate transform, not backdrop-filter */
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .seed-container:hover {
+    transform: translateY(-1px);
   }
 
   .seed-word {
@@ -351,7 +367,8 @@
   }
 
   :global(.dark) .seed-container {
-    background-color: var(--bg-secondary) !important;
+    background: rgba(45, 45, 45, 0.6) !important;
+    border-color: rgba(255, 255, 255, 0.1);
   }
 
   :global(.dark) .word-number {
@@ -380,11 +397,20 @@
     width: 100%;
     max-width: 800px;
     padding: 2rem;
-    background: #f0f2f5;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.6);
     border-radius: 24px;
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    /* Only animate transform, not backdrop-filter */
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .token-input-container:hover {
+    transform: translateY(-1px);
   }
 
   .token-section {
@@ -418,7 +444,8 @@
   }
 
   :global(.dark) .token-input-container {
-    background-color: var(--bg-secondary) !important;
+    background: rgba(45, 45, 45, 0.6) !important;
+    border-color: rgba(255, 255, 255, 0.1);
   }
 
   :global(.dark) .divider::before,
@@ -443,50 +470,122 @@
   }
 
   :global(.dark) .token-input-container {
-    background-color: var(--bg-secondary) !important;
+    background: rgba(45, 45, 45, 0.6) !important;
+    border-color: rgba(255, 255, 255, 0.1);
   }
 
-  /* Removed unused recovery-button styles */
-
-  .recovery-button-secondary {
-    background-color: transparent;
-    color: #666;
+  .recovery-button {
+    background: #1a1a1a;
+    color: white;
     border: none;
-    border-radius: 9999px;
-    padding: 16px 32px;
-    font-size: 18px;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
-    width: 100%;
-    max-width: 300px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  /* Removed unused dark mode recovery-button styles */
+  .recovery-button:hover {
+    background: #2a2a2a;
+    transform: translateY(-1px);
+  }
+
+  .recovery-button:active {
+    transform: translateY(0);
+  }
+
+  :global(.dark) .recovery-button {
+    background: #ffffff;
+    color: #1a1a1a;
+  }
+
+  :global(.dark) .recovery-button:hover {
+    background: #f0f0f0;
+  }
+
+  .recovery-button-secondary {
+    background: transparent;
+    color: #1a1a1a;
+    border: 1px solid rgba(226, 232, 240, 0.6);
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .recovery-button-secondary:hover {
+    background: rgba(26, 26, 26, 0.05);
+    transform: translateY(-1px);
+  }
+
+  .recovery-button-secondary:active {
+    transform: translateY(0);
+  }
+
+  .recovery-button-secondary.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .recovery-button-secondary.disabled:hover {
+    transform: none !important;
+    background: transparent;
+  }
 
   :global(.dark) .recovery-button-secondary {
-    color: #a0aec0;
+    background: transparent;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   :global(.dark) .recovery-button-secondary:hover {
-    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
   }
 
+  :global(.dark) .recovery-button-secondary.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  :global(.dark) .recovery-button-secondary.disabled:hover {
+    background: transparent;
+  }
+
+  /* Dark mode gradient buttons maintain same style */
+
   .refresh-balance-button {
-    background: none;
+    background: unset;
+    background-color: unset;
     border: none;
-    color: #666;
+    color: rgba(26, 26, 26, 1);
     cursor: pointer;
-    padding: 4px;
+    padding: 8px;
     margin-left: 8px;
     vertical-align: middle;
-    border-radius: 4px;
-    transition: all 0.2s ease;
+    border-radius: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .refresh-balance-button:hover {
-    background-color: rgba(0, 0, 0, 0.1);
-    color: #333;
+    background: unset;
+    transform: rotate(90deg);
+  }
+
+  .refresh-balance-button:active {
+    transform: rotate(90deg) scale(0.96);
   }
 
   :global(.dark) .refresh-balance-button {
@@ -494,7 +593,7 @@
   }
 
   :global(.dark) .refresh-balance-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(160, 174, 192, 0.1);
     color: #ffffff;
   }
 
@@ -523,25 +622,27 @@
     background: #4B5563;
   }
   
-  /* Button row styling */
-  .button-row {
+  .button-container-right {
     display: flex;
     flex-direction: row;
-    gap: 1rem;
-    justify-content: center;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
     width: 100%;
     max-width: 800px;
+    margin-top: 1rem;
   }
   
   @media (max-width: 640px) {
-    .button-row {
+    .button-container-right {
       flex-direction: column;
+      align-items: stretch;
       gap: 0.5rem;
     }
     
     .recovery-button-secondary {
       font-size: 16px;
-      padding: 12px 24px;
+      padding: 12px 20px;
     }
   }
 </style>

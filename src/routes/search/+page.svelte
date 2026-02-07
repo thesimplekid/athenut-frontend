@@ -1,6 +1,6 @@
 <script>
   import { onMount } from "svelte";
-  // API dependency removed to focus on UI fixes only
+  import { PUBLIC_API_URL } from "$env/static/public";
   import { goto } from "$app/navigation";
   import mint_url from "$lib/shared/store/mint_url";
   import {
@@ -112,20 +112,16 @@
 
       let encoded_token = getEncodedTokenV4(token);
 
-      // API call removed to focus on UI fixes only
-      // let response = await fetch(`${PUBLIC_API_URL}/search?q=${search_query}`, {
-      //   headers: { "X-Cashu": `${encoded_token}` },
-      // });
-      // 
-      // if (!response.ok) {
-      //   console.error(`Error: ${response.status} ${response.statusText}`);
-      //   throw new Error(`Search failed with status ${response.status}`);
-      // }
-      // 
-      // search_results = await response.json();
+      let response = await fetch(`${PUBLIC_API_URL}/search?q=${search_query}`, {
+        headers: { "X-Cashu": `${encoded_token}` },
+      });
       
-      // Placeholder for UI testing
-      search_results = [];
+      if (!response.ok) {
+        console.error(`Error: ${response.status} ${response.statusText}`);
+        throw new Error(`Search failed with status ${response.status}`);
+      }
+      
+      search_results = await response.json();
 
       // Update keyset counts to preserve the keyset ID
       let keyset_counts = getKeysetCounts();
@@ -179,7 +175,7 @@
 </svelte:head>
 
 <div
-  class="min-h-screen flex flex-col relative gradient-background"
+  class="min-h-dvh flex flex-col relative gradient-background"
   style="background-color: var(--bg-primary); color: var(--text-primary)"
 >
   <Navbar {balance} />
@@ -206,6 +202,7 @@
             <button
               class="search-button absolute right-2 top-1/2 transform -translate-y-1/2"
               on:click={handleSearch}
+              aria-label="Search"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -228,10 +225,10 @@
     </div>
   </header>
 
-  <div class="flex-grow flex flex-col relative">
+  <div class="flex-grow flex flex-col relative search-results-container">
     {#if !isLoading && search_results.length > 0}
       <p
-        class="text-sm mb-4 search-aligned"
+        class="text-sm mb-4 search-aligned tabular-nums"
         style="color: var(--text-secondary)"
       >
         Found {search_results.length} results in {searchTime} seconds
@@ -252,8 +249,15 @@
     <div class="flex-grow">
       <main class="search-aligned">
         {#if isLoading}
-          <div class="spinner-container">
-            <div class="spinner"></div>
+          <div class="search-results-skeleton">
+            {#each Array(3) as _}
+              <div class="skeleton-result-item">
+                <div class="skeleton-title"></div>
+                <div class="skeleton-url"></div>
+                <div class="skeleton-description"></div>
+                <div class="skeleton-description skeleton-description-short"></div>
+              </div>
+            {/each}
           </div>
         {:else if search_results.length === 0}
           <p class="text-center text-gray-400">
@@ -327,7 +331,7 @@
     border: none;
     padding: 8px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.15s ease;
   }
 
   .search-button:hover {
@@ -338,41 +342,110 @@
     outline: none;
   }
 
-  .spinner-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: var(--bg-primary);
-    opacity: 0.8;
-    z-index: 1000;
+  /* Skeleton loading states */
+  .search-results-skeleton {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
   }
 
-  .spinner {
-    width: 50px;
-    height: 50px;
-    border: 4px solid var(--text-secondary);
-    border-top: 4px solid var(--text-primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+  .skeleton-result-item {
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
   }
 
-  @keyframes spin {
+  .skeleton-title {
+    width: 70%;
+    height: 24px;
+    background: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.06) 0%,
+      rgba(0, 0, 0, 0.1) 50%,
+      rgba(0, 0, 0, 0.06) 100%
+    );
+    background-size: 200% 100%;
+    border-radius: 4px;
+    margin-bottom: 0.75rem;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+  }
+
+  .skeleton-url {
+    width: 50%;
+    height: 16px;
+    background: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.06) 0%,
+      rgba(0, 0, 0, 0.1) 50%,
+      rgba(0, 0, 0, 0.06) 100%
+    );
+    background-size: 200% 100%;
+    border-radius: 4px;
+    margin-bottom: 0.75rem;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+  }
+
+  .skeleton-description {
+    width: 100%;
+    height: 16px;
+    background: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.06) 0%,
+      rgba(0, 0, 0, 0.1) 50%,
+      rgba(0, 0, 0, 0.06) 100%
+    );
+    background-size: 200% 100%;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+  }
+
+  .skeleton-description-short {
+    width: 80%;
+  }
+
+  @keyframes skeleton-loading {
     0% {
-      transform: rotate(0deg);
+      background-position: 200% 0;
     }
     100% {
-      transform: rotate(360deg);
+      background-position: -200% 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-title,
+    .skeleton-url,
+    .skeleton-description {
+      animation: none;
+      background: rgba(0, 0, 0, 0.06);
+    }
+  }
+
+  :global(.dark) .skeleton-title,
+  :global(.dark) .skeleton-url,
+  :global(.dark) .skeleton-description {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.06) 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.06) 100%
+    );
+    background-size: 200% 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(.dark) .skeleton-title,
+    :global(.dark) .skeleton-url,
+    :global(.dark) .skeleton-description {
+      background: rgba(255, 255, 255, 0.06);
     }
   }
 
   /* Update header and search container layout */
   header {
     padding: 1rem;
+    padding-top: calc(80px + 1rem); /* Navbar height (80px) + padding (1rem) */
     display: flex;
     justify-content: center;
     width: 100%;
@@ -380,11 +453,16 @@
     margin: 0 auto;
   }
 
+  /* Search results container - consistent top spacing like other pages */
+  .search-results-container {
+    padding-top: 2rem; /* Spacing between header and results */
+  }
+
   .search-container {
     width: 100%;
     max-width: 800px;
     margin: 0 auto;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
   }
 
   .search-container.search-active {

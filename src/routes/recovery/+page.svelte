@@ -21,6 +21,8 @@
   import Navbar from "../../components/Navbar.svelte";
   import { showToast } from "$lib/stores/toast";
   import { mnemonicToSeedSync } from "@scure/bip39";
+  import { fade, fly, scale } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
 
   let words = Array(12).fill("");
   let errorMessage = "";
@@ -28,6 +30,7 @@
   let tokenError = "";
   let isRestoring = false; // Track if wallet restoration is in progress
   let tokenRestoring = false; // Track if token redemption is in progress
+  let contentReady = false;
 
   /** @type {CashuWallet|null} */
   let wallet = null;
@@ -380,6 +383,7 @@
     if (savedTheme === "dark") {
       document.documentElement.classList.add("dark");
     }
+    setTimeout(() => contentReady = true, 100);
   });
 
   // Subscribe to theme changes
@@ -399,120 +403,130 @@
 </svelte:head>
 
 <div
-  class="min-h-screen flex flex-col text-gray-800 bg-white relative dark:bg-[var(--bg-primary)] dark:text-white"
+  class="min-h-dvh flex flex-col text-gray-800 bg-white relative dark:bg-[var(--bg-primary)] dark:text-white"
 >
   <Navbar />
 
   <main
-    class="flex-grow flex flex-col justify-start items-center px-4 py-8 dark:bg-[var(--bg-primary)]"
+    class="flex-grow flex flex-col justify-start items-center px-4 pt-24 pb-8 dark:bg-[var(--bg-primary)]"
   >
-    <h1
-      class="text-4xl font-bold mb-2 text-center text-gray-800 dark:text-white"
-      style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;"
-    >
-      Recovery
-    </h1>
+    {#if contentReady}
+      <div in:fade={{ duration: 360, easing: quintOut }}>
+        <h1
+          class="text-4xl font-bold mb-2 text-center text-gray-800 dark:text-white"
+          style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;"
+          in:fly={{ y: 12, duration: 320, delay: 90, easing: quintOut }}
+        >
+          Recovery
+        </h1>
 
-    <p class="text-xl text-gray-600 dark:text-gray-500 mb-6">
-      Enter your 12-word recovery phrase to restore your searches.
-    </p>
+        <p class="text-xl text-gray-600 dark:text-gray-500 mb-6" in:fly={{ y: 10, duration: 300, delay: 130, easing: quintOut }}>
+          Enter your 12-word recovery phrase to restore your searches.
+        </p>
 
-    <div class="seed-container">
-      {#each words as word, i}
-        <div class="seed-word">
-          <span class="word-number">{i + 1}</span>
-          <input
-            type="text"
-            class="word-text"
-            bind:value={words[i]}
-            placeholder="Enter word"
-          />
-          <div class="underline"></div>
+        <div class="seed-container" in:scale={{ duration: 280, delay: 170, start: 0.97, easing: quintOut }}>
+          {#each words as word, i}
+            <div class="seed-word">
+              <span class="word-number">{i + 1}</span>
+              <input
+                type="text"
+                class="word-text"
+                bind:value={words[i]}
+                placeholder="Enter word"
+              />
+              <div class="underline"></div>
+            </div>
+          {/each}
         </div>
-      {/each}
-    </div>
 
-    {#if errorMessage}
-      <p class="text-red-500 mt-2 text-center">{errorMessage}</p>
-    {/if}
-
-    <button class="recovery-button-secondary mb-4" on:click={handleRecover}>
-      Paste Recovery Phrase
-    </button>
-
-    <button
-      class="recovery-button {!isComplete || isRestoring ? 'disabled' : ''}"
-      on:click={handleRestore}
-      disabled={!isComplete || isRestoring}
-    >
-      {#if isRestoring}
-        <div class="spinner-container">
-          <div class="spinner"></div>
-          <span class="ml-2">Restoring...</span>
-        </div>
-      {:else}
-        Restore Wallet
-      {/if}
-    </button>
-
-    <div class="divider my-8">OR</div>
-
-    <div class="token-section w-full max-w-800px flex flex-col items-center">
-      <h2
-        class="text-2xl font-bold mb-4 text-center text-gray-800 dark:text-white"
-        style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;"
-      >
-        Redeem Search Token
-      </h2>
-
-      <div
-        class="token-input-container seed-container"
-        style="display: block; padding: 1rem;"
-      >
-        <input
-          type="text"
-          class="word-text"
-          bind:value={tokenInput}
-          placeholder="Enter your Cashu token"
-        />
-        {#if tokenError}
-          <p class="text-red-500 mt-2 text-center">{tokenError}</p>
+        {#if errorMessage}
+          <p class="text-red-500 mt-2 text-center">{errorMessage}</p>
         {/if}
-      </div>
 
-      <button
-        class="recovery-button-secondary mb-4"
-        on:click={async () => {
-          try {
-            tokenInput = await navigator.clipboard.readText();
-            tokenError = "";
-          } catch (error) {
-            tokenError =
-              "Unable to access clipboard. Please grant clipboard permission.";
-            console.error("Clipboard error:", error);
-          }
-        }}
-      >
-        Paste Search Token
-      </button>
+        <div class="button-container-right">
+          <button class="recovery-button-secondary" on:click={handleRecover} in:scale={{ duration: 220, delay: 200, start: 0.97, easing: quintOut }}>
+            Paste Recovery Phrase
+          </button>
 
-      <button
-        class="recovery-button mt-4 {!tokenInput.trim() || tokenRestoring
-          ? 'disabled'
-          : ''}"
-        on:click={handleTokenRedeem}
-        disabled={!tokenInput.trim() || tokenRestoring}
-      >
-        {#if tokenRestoring}
-          <div class="spinner-container">
-            <div class="spinner"></div>
-            <span class="ml-2">Redeeming...</span>
+          <button
+            class="recovery-button {!isComplete || isRestoring ? 'disabled' : ''}"
+            on:click={handleRestore}
+            disabled={!isComplete || isRestoring}
+            in:scale={{ duration: 220, delay: 230, start: 0.97, easing: quintOut }}
+          >
+            {#if isRestoring}
+              <div class="spinner-container">
+                <div class="spinner"></div>
+                <span class="ml-2">Restoring...</span>
+              </div>
+            {:else}
+              Restore Wallet
+            {/if}
+          </button>
+        </div>
+
+        <div class="divider my-8" in:fade={{ duration: 300, delay: 250 }}>OR</div>
+
+        <div class="token-section w-full max-w-800px flex flex-col items-center" in:fly={{ y: 12, duration: 320, delay: 270, easing: quintOut }}>
+          <h2
+            class="text-2xl font-bold mb-4 text-center text-gray-800 dark:text-white"
+            style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;"
+          >
+            Redeem Search Token
+          </h2>
+
+          <div
+            class="token-input-container seed-container"
+            style="display: block; padding: 1rem;"
+          >
+            <input
+              type="text"
+              class="word-text"
+              bind:value={tokenInput}
+              placeholder="Enter your Cashu token"
+            />
+            {#if tokenError}
+              <p class="text-red-500 mt-2 text-center">{tokenError}</p>
+            {/if}
           </div>
-        {:else}
-          Redeem Token
-        {/if}
-      </button>
-    </div>
+
+          <div class="button-container-right">
+            <button
+              class="recovery-button-secondary"
+              on:click={async () => {
+                try {
+                  tokenInput = await navigator.clipboard.readText();
+                  tokenError = "";
+                } catch (error) {
+                  tokenError =
+                    "Unable to access clipboard. Please grant clipboard permission.";
+                  console.error("Clipboard error:", error);
+                }
+              }}
+            >
+              Paste Search Token
+            </button>
+
+            <button
+              class="recovery-button {!tokenInput.trim() || tokenRestoring
+                ? 'disabled'
+                : ''}"
+              on:click={handleTokenRedeem}
+              disabled={!tokenInput.trim() || tokenRestoring}
+            >
+              {#if tokenRestoring}
+                <div class="spinner-container">
+                  <div class="spinner"></div>
+                  <span class="ml-2">Redeeming...</span>
+                </div>
+              {:else}
+                Redeem Token
+              {/if}
+            </button>
+          </div>
+        </div>
+      </div>
+    {/if}
   </main>
 
   <Footer />
@@ -525,11 +539,20 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
     padding: 2rem;
-    background: #f0f2f5;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.6);
     border-radius: 24px;
     margin-bottom: 2rem;
     width: 100%;
     max-width: 800px;
+    /* Only animate transform, not backdrop-filter */
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .seed-container:hover {
+    transform: translateY(-1px);
   }
 
   .seed-word {
@@ -575,65 +598,41 @@
   }
 
   .recovery-button {
-    background-color: #1a1a1a;
+    background: #1a1a1a;
     color: white;
     border: none;
-    border-radius: 9999px;
-    padding: 16px 32px;
-    font-size: 18px;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(26, 26, 26, 0.2);
-    width: 100%;
-    max-width: 300px;
-    position: relative;
-    overflow: hidden;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .recovery-button:hover {
-    background-color: #2a2a2a;
-    box-shadow: 0 4px 8px rgba(26, 26, 26, 0.3);
+    background: #2a2a2a;
+    transform: translateY(-1px);
+  }
+
+  .recovery-button:active {
+    transform: translateY(0);
   }
 
   .recovery-button:focus {
     outline: none;
-    box-shadow:
-      0 0 0 2px rgba(255, 255, 255, 0.5),
-      0 4px 8px rgba(26, 26, 26, 0.3);
-  }
-
-  .recovery-button::before {
-    content: "";
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(45deg, #4285f4, #34a853, #fbbc05, #ea4335);
-    z-index: -1;
-    filter: blur(5px);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-
-  .recovery-button:hover::before {
-    opacity: 0.5;
   }
 
   .recovery-button.disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    background-color: #666;
+    transform: none !important;
   }
 
   .recovery-button.disabled:hover {
-    background-color: #666;
-    box-shadow: 0 2px 4px rgba(26, 26, 26, 0.2);
-  }
-
-  .recovery-button.disabled::before {
-    display: none;
+    transform: none !important;
   }
 
   .mb-4 {
@@ -641,21 +640,49 @@
   }
 
   .recovery-button-secondary {
-    background-color: transparent;
-    color: #666;
-    border: none;
-    border-radius: 9999px;
-    padding: 16px 32px;
-    font-size: 18px;
+    background: transparent;
+    color: #1a1a1a;
+    border: 1px solid rgba(226, 232, 240, 0.6);
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
-    width: 100%;
-    max-width: 300px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .recovery-button-secondary:hover {
-    color: #1a1a1a;
+    background: rgba(26, 26, 26, 0.05);
+    transform: translateY(-1px);
+  }
+
+  .recovery-button-secondary:active {
+    transform: translateY(0);
+  }
+
+  .recovery-button-secondary.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .recovery-button-secondary.disabled:hover {
+    transform: none !important;
+    background: transparent;
+  }
+
+  .button-container-right {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 800px;
+    margin-top: 1rem;
   }
 
   @media (max-width: 640px) {
@@ -685,17 +712,18 @@
     /* Removed unused main-heading styles */
 
     .recovery-button {
-      width: 80%;
-      max-width: 250px;
-      padding: 14px 28px;
+      padding: 12px 20px;
       font-size: 16px;
     }
 
     .recovery-button-secondary {
-      width: 80%;
-      max-width: 250px;
-      padding: 14px 28px;
+      padding: 12px 20px;
       font-size: 16px;
+    }
+
+    .button-container-right {
+      flex-direction: column;
+      align-items: stretch;
     }
   }
 
@@ -710,7 +738,8 @@
   }
 
   :global(.dark) .seed-container {
-    background-color: #2d2d2d !important;
+    background: rgba(45, 45, 45, 0.6) !important;
+    border-color: rgba(255, 255, 255, 0.1);
   }
 
   :global(.dark) .word-number {
@@ -723,28 +752,45 @@
 
   /* Removed unused dark mode main-heading styles */
 
+  /* Dark mode button styles - ensure high contrast */
   :global(.dark) .recovery-button {
-    background-color: #2d2d2d;
+    background: #ffffff !important;
+    color: #1a1a1a !important;
+  }
+
+  :global(.dark) .recovery-button:hover {
+    background: #e5e5e5 !important;
+    color: #1a1a1a !important;
   }
 
   :global(.dark) .recovery-button-secondary {
-    color: #a0aec0;
+    background: transparent;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   :global(.dark) .recovery-button-secondary:hover {
-    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
   }
 
-  /* Removed unused dark mode back-button styles */
-
-  /* Add dark mode text color for headings */
-  :global(.dark) h1 {
-    color: #ffffff;
+  :global(.dark) .recovery-button-secondary.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
-  /* If you also want to ensure the description text below is properly colored */
-  :global(.dark) .text-gray-600 {
-    color: #a0aec0;
+  :global(.dark) .recovery-button-secondary.disabled:hover {
+    background: transparent;
+  }
+
+  /* Dark mode text colors */
+  :global(.dark) h1,
+  :global(.dark) h2 {
+    color: #ffffff !important;
+  }
+
+  :global(.dark) .text-gray-600,
+  :global(.dark) .text-gray-500 {
+    color: #a0aec0 !important;
   }
 
   .divider {
@@ -777,11 +823,20 @@
     width: 100%;
     max-width: 800px;
     padding: 2rem;
-    background: #f0f2f5;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.6);
     border-radius: 24px;
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    /* Only animate transform, not backdrop-filter */
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .token-input-container:hover {
+    transform: translateY(-1px);
   }
 
   .token-input {
@@ -801,7 +856,8 @@
 
   /* Dark mode styles */
   :global(.dark) .token-input-container {
-    background-color: #2d2d2d;
+    background: rgba(45, 45, 45, 0.6) !important;
+    border-color: rgba(255, 255, 255, 0.1);
   }
 
   :global(.dark) .token-input {
@@ -890,9 +946,9 @@
     margin-left: 0.5rem;
   }
 
-  /* Dark mode spinner */
+  /* Dark mode spinner - darker for white button background */
   :global(.dark) .spinner {
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-top: 2px solid white;
+    border: 2px solid rgba(26, 26, 26, 0.2);
+    border-top: 2px solid #1a1a1a;
   }
 </style>
