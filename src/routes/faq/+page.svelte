@@ -1,6 +1,6 @@
 <script>
     import { slide, fade, fly, scale } from 'svelte/transition';
-    import { quintOut, elasticOut } from 'svelte/easing';
+    import { quintOut } from 'svelte/easing';
     import { onMount } from 'svelte';
     import { theme } from "$lib/stores/theme";
     import Footer from "../../components/Footer.svelte";
@@ -63,15 +63,15 @@
     <main class="flex-grow flex flex-col items-center px-4 pt-24 pb-8">
       {#if contentReady}
         <div class="w-full max-w-3xl">
-          <h1 class="text-4xl font-bold mb-2 text-center text-balance" in:fly={{ y: 20, duration: 500, delay: 200, easing: quintOut }}>
+          <h1 class="text-4xl font-bold mb-2 text-center text-balance" in:fly={{ y: 12, duration: 320, delay: 90, easing: quintOut }}>
             Frequently Asked Questions
           </h1>
 
-          <p class="text-xl text-gray-600 text-center mb-8 text-pretty" in:fly={{ y: 20, duration: 500, delay: 300, easing: quintOut }}>
+          <p class="text-xl text-gray-600 text-center mb-8 text-pretty" in:fly={{ y: 12, duration: 320, delay: 140, easing: quintOut }}>
             Find answers to common questions about using Athenut.
           </p>
 
-          <div class="faq-container" in:fade={{ duration: 400, delay: 400, easing: quintOut }}>
+          <div class="faq-container" in:fade={{ duration: 320, delay: 170, easing: quintOut }}>
             {#each faqs as faq, index}
               <div class="faq-item">
                 <button
@@ -99,7 +99,7 @@
                   </svg>
                 </button>
                 {#if expandedQuestions.includes(index)}
-                  <div class="faq-answer text-pretty" transition:slide={{ duration: 300, easing: quintOut }}>
+                  <div class="faq-answer text-pretty" transition:slide={{ duration: 220, easing: quintOut }}>
                     {faq.answer}
                   </div>
                 {/if}
@@ -133,7 +133,7 @@
     }
 
     .faq-item:hover {
-      transform: translateY(-2px);
+      transform: translateY(-1px);
     }
   
     .faq-question {

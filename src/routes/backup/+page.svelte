@@ -12,7 +12,7 @@
   import { getBalance, debugProofs, getProofs, forceBalanceRefresh } from "$lib/shared/utils";
   import { getEncodedTokenV4 } from "@cashu/cashu-ts";
   import { fade, fly, scale } from 'svelte/transition';
-  import { quintOut, elasticOut } from 'svelte/easing';
+  import { quintOut } from 'svelte/easing';
 
   // Sample words (these should come from your app's logic later)
   const words = $seed.trim().split(/\s+/);
@@ -127,8 +127,8 @@
   <Navbar />
   <main class="flex-grow flex flex-col justify-start items-center px-4 pt-24 pb-8">
     {#if contentReady}
-      <div class="relative w-full max-w-[800px]" in:fade={{ duration: 600, easing: quintOut }}>
-        <div in:fly={{ y: 20, duration: 500, delay: 200, easing: quintOut }}>
+      <div class="relative w-full max-w-[800px]" in:fade={{ duration: 360, easing: quintOut }}>
+        <div in:fly={{ y: 12, duration: 320, delay: 90, easing: quintOut }}>
           <h1 class="text-4xl font-bold mb-2 text-center text-gray-800 dark:text-white" style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;">
             Backup
           </h1>
@@ -164,7 +164,7 @@
           </div>
         </div>
 
-          <div class="text-2xl font-semibold text-gray-900 dark:text-white mt-2 mb-4 text-center tabular-nums" style="color: {$theme === 'dark' ? '#ffffff' : '#111827'} !important;" in:fly={{ y: 20, duration: 500, delay: 300, easing: quintOut }}>
+          <div class="text-2xl font-semibold text-gray-900 dark:text-white mt-2 mb-4 text-center tabular-nums" style="color: {$theme === 'dark' ? '#ffffff' : '#111827'} !important;" in:fly={{ y: 10, duration: 300, delay: 130, easing: quintOut }}>
           You have {balance} searches left
           <button
             class="refresh-balance-button"
@@ -190,11 +190,11 @@
           </button>
         </div>
 
-        <p class="text-xl text-gray-600 dark:text-[#a0aec0] mb-6 text-center" in:fly={{ y: 20, duration: 500, delay: 400, easing: quintOut }}>
+        <p class="text-xl text-gray-600 dark:text-[#a0aec0] mb-6 text-center" in:fly={{ y: 10, duration: 300, delay: 160, easing: quintOut }}>
           Save your secret recovery phrase in a secure place that only you control.
         </p>
 
-        <div class="seed-container" in:scale={{ duration: 400, delay: 500, start: 0.95, easing: quintOut }}>
+        <div class="seed-container" in:scale={{ duration: 280, delay: 200, start: 0.97, easing: quintOut }}>
           {#each words as word, i}
             <div class="seed-word">
               <span class="word-number">{i + 1}</span>
@@ -205,14 +205,14 @@
         </div>
 
         <div class="button-container-right">
-          <button class="recovery-button" on:click={handleCopyPhrase} in:scale={{ duration: 300, delay: 600, start: 0.9, easing: elasticOut }}>
+          <button class="recovery-button" on:click={handleCopyPhrase} in:scale={{ duration: 220, delay: 220, start: 0.97, easing: quintOut }}>
             Copy Recovery Phrase
           </button>
         </div>
 
-        <div class="divider my-8" in:fade={{ duration: 400, delay: 700 }}>OR</div>
+        <div class="divider my-8" in:fade={{ duration: 300, delay: 240 }}>OR</div>
 
-        <div class="token-section w-full max-w-800px flex flex-col items-center" in:fly={{ y: 30, duration: 500, delay: 800, easing: quintOut }}>
+        <div class="token-section w-full max-w-800px flex flex-col items-center" in:fly={{ y: 12, duration: 320, delay: 260, easing: quintOut }}>
           <h2 class="text-2xl font-bold mb-4 text-center text-gray-800 dark:text-white" style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;">
             Export Search Token
           </h2>
@@ -303,7 +303,7 @@
   }
 
   .seed-container:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 
   .seed-word {
@@ -410,7 +410,7 @@
   }
 
   .token-input-container:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 
   .token-section {
@@ -491,7 +491,7 @@
 
   .recovery-button:hover {
     background: #2a2a2a;
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 
   .recovery-button:active {
@@ -524,7 +524,7 @@
 
   .recovery-button-secondary:hover {
     background: rgba(26, 26, 26, 0.05);
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 
   .recovery-button-secondary:active {
@@ -581,11 +581,11 @@
 
   .refresh-balance-button:hover {
     background: unset;
-    transform: rotate(180deg);
+    transform: rotate(90deg);
   }
 
   .refresh-balance-button:active {
-    transform: rotate(180deg) scale(0.9);
+    transform: rotate(90deg) scale(0.96);
   }
 
   :global(.dark) .refresh-balance-button {

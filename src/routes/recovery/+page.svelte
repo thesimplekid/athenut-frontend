@@ -22,7 +22,7 @@
   import { showToast } from "$lib/stores/toast";
   import { mnemonicToSeedSync } from "@scure/bip39";
   import { fade, fly, scale } from 'svelte/transition';
-  import { quintOut, elasticOut } from 'svelte/easing';
+  import { quintOut } from 'svelte/easing';
 
   let words = Array(12).fill("");
   let errorMessage = "";
@@ -411,20 +411,20 @@
     class="flex-grow flex flex-col justify-start items-center px-4 pt-24 pb-8 dark:bg-[var(--bg-primary)]"
   >
     {#if contentReady}
-      <div in:fade={{ duration: 600, easing: quintOut }}>
+      <div in:fade={{ duration: 360, easing: quintOut }}>
         <h1
           class="text-4xl font-bold mb-2 text-center text-gray-800 dark:text-white"
           style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;"
-          in:fly={{ y: 20, duration: 500, delay: 200, easing: quintOut }}
+          in:fly={{ y: 12, duration: 320, delay: 90, easing: quintOut }}
         >
           Recovery
         </h1>
 
-        <p class="text-xl text-gray-600 dark:text-gray-500 mb-6" in:fly={{ y: 20, duration: 500, delay: 300, easing: quintOut }}>
+        <p class="text-xl text-gray-600 dark:text-gray-500 mb-6" in:fly={{ y: 10, duration: 300, delay: 130, easing: quintOut }}>
           Enter your 12-word recovery phrase to restore your searches.
         </p>
 
-        <div class="seed-container" in:scale={{ duration: 400, delay: 400, start: 0.95, easing: quintOut }}>
+        <div class="seed-container" in:scale={{ duration: 280, delay: 170, start: 0.97, easing: quintOut }}>
           {#each words as word, i}
             <div class="seed-word">
               <span class="word-number">{i + 1}</span>
@@ -444,7 +444,7 @@
         {/if}
 
         <div class="button-container-right">
-          <button class="recovery-button-secondary" on:click={handleRecover} in:scale={{ duration: 300, delay: 500, start: 0.9, easing: elasticOut }}>
+          <button class="recovery-button-secondary" on:click={handleRecover} in:scale={{ duration: 220, delay: 200, start: 0.97, easing: quintOut }}>
             Paste Recovery Phrase
           </button>
 
@@ -452,7 +452,7 @@
             class="recovery-button {!isComplete || isRestoring ? 'disabled' : ''}"
             on:click={handleRestore}
             disabled={!isComplete || isRestoring}
-            in:scale={{ duration: 300, delay: 600, start: 0.9, easing: elasticOut }}
+            in:scale={{ duration: 220, delay: 230, start: 0.97, easing: quintOut }}
           >
             {#if isRestoring}
               <div class="spinner-container">
@@ -465,9 +465,9 @@
           </button>
         </div>
 
-        <div class="divider my-8" in:fade={{ duration: 400, delay: 700 }}>OR</div>
+        <div class="divider my-8" in:fade={{ duration: 300, delay: 250 }}>OR</div>
 
-        <div class="token-section w-full max-w-800px flex flex-col items-center" in:fly={{ y: 30, duration: 500, delay: 800, easing: quintOut }}>
+        <div class="token-section w-full max-w-800px flex flex-col items-center" in:fly={{ y: 12, duration: 320, delay: 270, easing: quintOut }}>
           <h2
             class="text-2xl font-bold mb-4 text-center text-gray-800 dark:text-white"
             style="color: {$theme === 'dark' ? '#ffffff' : '#1f2937'} !important;"
@@ -552,7 +552,7 @@
   }
 
   .seed-container:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 
   .seed-word {
@@ -614,7 +614,7 @@
 
   .recovery-button:hover {
     background: #2a2a2a;
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 
   .recovery-button:active {
@@ -656,7 +656,7 @@
 
   .recovery-button-secondary:hover {
     background: rgba(26, 26, 26, 0.05);
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 
   .recovery-button-secondary:active {
@@ -836,7 +836,7 @@
   }
 
   .token-input-container:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 
   .token-input {

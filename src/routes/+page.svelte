@@ -7,7 +7,7 @@
   import Navbar from "../components/Navbar.svelte";
   import bgl from "/src/bgl.png";
   import { fade, fly, scale } from 'svelte/transition';
-  import { quintOut, elasticOut } from 'svelte/easing';
+  import { quintOut } from 'svelte/easing';
 
   /** @type {number} */
   let balance = 0;
@@ -55,29 +55,29 @@
   <!-- Main content with top padding for fixed navbar -->
   <div class="main-content">
     {#if contentReady}
-      <div class="container" in:fade={{ duration: 600, easing: quintOut }}>
+      <div class="container" in:fade={{ duration: 360, easing: quintOut }}>
         <img
           src="{wordmark}"
           alt="X-Cashu Search"
           class="wordmark"
-          in:scale={{ duration: 600, delay: 200, start: 0.8, easing: elasticOut }}
+          in:scale={{ duration: 320, delay: 80, start: 0.96, easing: quintOut }}
         />
 
         <h2
           class="tagline text-balance"
-          in:fly={{ y: 20, duration: 500, delay: 400, easing: quintOut }}
+          in:fly={{ y: 12, duration: 320, delay: 140, easing: quintOut }}
         >
           Search smarter. Pay in sats for results that matter.
         </h2>
 
-        <div class="search-container" in:fly={{ y: 30, duration: 500, delay: 600, easing: quintOut }}>
+        <div class="search-container" in:fly={{ y: 14, duration: 320, delay: 180, easing: quintOut }}>
           {#if isLoading}
             <div class="search-skeleton">
               <div class="skeleton-input"></div>
               <div class="skeleton-button"></div>
             </div>
           {:else if balance === undefined || balance <= 0}
-            <div class="empty-state" transition:scale={{ duration: 300, easing: quintOut }}>
+            <div class="empty-state" transition:scale={{ duration: 220, start: 0.97, easing: quintOut }}>
               <h3 class="empty-state-title">Top Up Required</h3>
               <p class="empty-state-description text-pretty">
                 You need to add funds to start searching.
@@ -242,7 +242,7 @@
   }
 
   .search-input-container:focus-within {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     border-color: rgba(102, 126, 234, 0.4);
   }
 
@@ -282,7 +282,7 @@
 
   .search-button:hover {
     background: #2a2a2a;
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 
   .search-button:active {
@@ -441,7 +441,7 @@
 
   .empty-state-button:hover {
     background: #2a2a2a;
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 
   .empty-state-button:active {

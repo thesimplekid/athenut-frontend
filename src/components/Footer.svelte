@@ -59,7 +59,7 @@
     font-weight: 400;
     position: relative;
     margin-top: 0;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .footer-content {
@@ -100,16 +100,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .github-link:hover {
-    transform: scale(1.1);
-    opacity: 0.8;
+    transform: scale(1.04);
+    opacity: 0.9;
   }
 
   .github-link:active {
-    transform: scale(0.95);
+    transform: scale(0.98);
   }
 
   .github-icon {

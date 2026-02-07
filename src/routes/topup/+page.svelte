@@ -29,7 +29,7 @@
   import { theme } from "$lib/stores/theme";
   import Navbar from "../../components/Navbar.svelte";
   import { fade, fly, scale } from 'svelte/transition';
-  import { quintOut, elasticOut } from 'svelte/easing';
+  import { quintOut } from 'svelte/easing';
 
   // Function to generate a mnemonic (matching the one in wallet.js)
   function generateWalletMnemonic() {
@@ -500,8 +500,8 @@
 
   <main class="main-content">
     {#if contentReady}
-      <div class="content-container" in:fade={{ duration: 600, easing: quintOut }}>
-        <div class="header-section" in:fly={{ y: 20, duration: 500, delay: 200, easing: quintOut }}>
+      <div class="content-container" in:fade={{ duration: 360, easing: quintOut }}>
+        <div class="header-section" in:fly={{ y: 12, duration: 320, delay: 90, easing: quintOut }}>
           <h1 class="page-title">Top Up</h1>
 
           <div class="balance-display">
@@ -539,13 +539,13 @@
           </p>
         </div>
 
-        <div class="qr-container" in:scale={{ duration: 400, delay: 400, easing: quintOut }}>
+        <div class="qr-container" in:scale={{ duration: 280, delay: 130, start: 0.97, easing: quintOut }}>
           {#if isLoading}
             <div class="spinner-container">
               <div class="spinner"></div>
             </div>
           {:else if data !== ""}
-            <div class="qr-section" transition:scale={{ duration: 300, easing: quintOut }}>
+            <div class="qr-section" transition:scale={{ duration: 220, start: 0.98, easing: quintOut }}>
               <div class="qr-info">
                 Purchasing <strong>{selectedSearches} searches</strong> for <strong>{invoice_amount} sats</strong>
               </div>
@@ -571,7 +571,7 @@
                 <button
                   on:click={() => handleTopUp(search_count)}
                   class="top-up-button"
-                  in:scale={{ duration: 300, delay: 500 + (i * 50), start: 0.8, easing: elasticOut }}
+                  in:scale={{ duration: 220, delay: 180 + (i * 35), start: 0.96, easing: quintOut }}
                 >
                   <div class="search-count">{search_count}</div>
                   <div class="search-label">{search_count === 1 ? 'Search' : 'Searches'}</div>
@@ -583,7 +583,7 @@
 
         <!-- Transaction History Table -->
         {#if pendingInvoices.length > 0}
-          <div class="transaction-history-container" in:fly={{ y: 30, duration: 500, delay: 900, easing: quintOut }}>
+          <div class="transaction-history-container" in:fly={{ y: 14, duration: 320, delay: 260, easing: quintOut }}>
             <h2 class="history-title">Recent Invoices</h2>
             <div class="transaction-table">
           {#each pendingInvoices.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) as quote}
@@ -787,7 +787,7 @@
   }
 
   .top-up-button:hover {
-    transform: translateY(-1px) scale(1.01);
+    transform: translateY(-0.5px) scale(1.005);
     border-color: rgba(0, 0, 0, 0.1);
     background: rgba(255, 255, 255, 0.95);
   }
@@ -798,8 +798,8 @@
   }
 
   .top-up-button:active {
-    transform: translateY(0) scale(0.99);
-    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(0) scale(0.995);
+    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .spinner-container {
@@ -875,7 +875,7 @@
 
   .copy-invoice-button:hover {
     background: #2a2a2a;
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 
   .copy-invoice-button:active {
@@ -955,11 +955,11 @@
   .refresh-balance-button:hover {
     background-color: rgba(102, 126, 234, 0.1);
     color: #667eea;
-    transform: rotate(180deg);
+    transform: rotate(90deg);
   }
 
   .refresh-balance-button:active {
-    transform: rotate(180deg) scale(0.9);
+    transform: rotate(90deg) scale(0.96);
   }
 
   .qr-section {

@@ -7,7 +7,7 @@
 {#if $toast.visible}
     <div
         class="toast-container"
-        transition:fly={{ y: -20, duration: 400, easing: quintOut }}
+        transition:fly={{ y: -8, duration: 220, easing: quintOut }}
     >
         <div class="toast-message">
             {$toast.message}

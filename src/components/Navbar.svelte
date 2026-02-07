@@ -4,7 +4,7 @@
     import { getBalance, forceBalanceRefresh } from '$lib/shared/utils';
     import { onMount } from 'svelte';
     import { fade, fly, scale } from 'svelte/transition';
-    import { quintOut, elasticOut } from 'svelte/easing';
+    import { quintOut } from 'svelte/easing';
 
     // If balance prop is provided, use it. Otherwise, will be set in onMount
     export let balance = 0;
@@ -60,15 +60,15 @@
   </script>
   
   <!-- Navbar HTML -->
-  <nav class="navbar" class:scrolled={isScrolled} in:fly={{ y: -50, duration: 600, easing: quintOut }}>
+  <nav class="navbar" class:scrolled={isScrolled} in:fly={{ y: -24, duration: 360, easing: quintOut }}>
     <!-- Logo -->
-    <a href="/" class="home-link" in:scale={{ duration: 400, delay: 200, easing: elasticOut }}>
+    <a href="/" class="home-link" in:scale={{ duration: 280, delay: 70, start: 0.97, easing: quintOut }}>
       <img src={logomark} alt="X-Cashu Search Logo" />
     </a>
 
     <!-- Top right info -->
     <div class="top-right-container">
-      <div class="top-right-info" in:fly={{ x: 50, duration: 500, delay: 300, easing: quintOut }}>
+      <div class="top-right-info" in:fly={{ x: 20, duration: 320, delay: 120, easing: quintOut }}>
         <span class="searches-left">
           Searches left: <span class="searches-count tabular-nums">{balance}</span>
         </span>
@@ -139,7 +139,7 @@
             <div
               class="dropdown-menu"
               on:blur={() => (isDropdownOpen = false)}
-              transition:fly={{ y: -10, duration: 200, easing: quintOut }}
+              transition:fly={{ y: -8, duration: 170, easing: quintOut }}
             >
               <a href="/backup" class="dropdown-item">
                 <svg
@@ -254,11 +254,11 @@
     }
 
     .home-link:hover {
-      transform: scale(1.05);
+      transform: scale(1.02);
     }
 
     .home-link:active {
-      transform: scale(0.95);
+      transform: scale(0.98);
     }
 
     .home-link img {
@@ -287,7 +287,7 @@
     }
 
     .searches-left:hover {
-      transform: translateY(-1px);
+      transform: translateY(-0.5px);
     }
   
     .searches-count {
@@ -310,7 +310,7 @@
 
     .top-up-button:hover {
       background: #2a2a2a;
-      transform: translateY(-1px);
+      transform: translateY(-0.5px);
     }
 
     .top-up-button:active {
@@ -343,12 +343,12 @@
     .theme-toggle:hover,
     .more-options-button:hover {
       background-color: #f3f4f6;
-      transform: scale(1.1);
+      transform: scale(1.04);
     }
 
     .theme-toggle:active,
     .more-options-button:active {
-      transform: scale(0.95);
+      transform: scale(0.98);
     }
   
     .dropdown-container {
@@ -388,7 +388,7 @@
     .dropdown-item:hover {
       background-color: #f3f4f6;
       color: #1a1a1a;
-      transform: translateX(4px);
+      transform: translateX(2px);
     }
   
     .dropdown-item:first-child {
