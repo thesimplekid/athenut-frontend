@@ -1,6 +1,6 @@
 <script>
   import { onMount } from "svelte";
-  // API dependency removed to focus on UI fixes only
+  import { PUBLIC_API_URL } from "$env/static/public";
   import { goto } from "$app/navigation";
   import mint_url from "$lib/shared/store/mint_url";
   import {
@@ -112,20 +112,16 @@
 
       let encoded_token = getEncodedTokenV4(token);
 
-      // API call removed to focus on UI fixes only
-      // let response = await fetch(`${PUBLIC_API_URL}/search?q=${search_query}`, {
-      //   headers: { "X-Cashu": `${encoded_token}` },
-      // });
-      // 
-      // if (!response.ok) {
-      //   console.error(`Error: ${response.status} ${response.statusText}`);
-      //   throw new Error(`Search failed with status ${response.status}`);
-      // }
-      // 
-      // search_results = await response.json();
+      let response = await fetch(`${PUBLIC_API_URL}/search?q=${search_query}`, {
+        headers: { "X-Cashu": `${encoded_token}` },
+      });
       
-      // Placeholder for UI testing
-      search_results = [];
+      if (!response.ok) {
+        console.error(`Error: ${response.status} ${response.statusText}`);
+        throw new Error(`Search failed with status ${response.status}`);
+      }
+      
+      search_results = await response.json();
 
       // Update keyset counts to preserve the keyset ID
       let keyset_counts = getKeysetCounts();
