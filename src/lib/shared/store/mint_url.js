@@ -3,7 +3,7 @@ import { browser } from '$app/environment';
 import { writable } from 'svelte/store';
 
 
-const defaultValue = "https://mint.athenut.com";
+const defaultValue = "https://v2.athenut.com";
   /** @type {string | undefined} */
 const initialValue = browser ? window.localStorage.getItem('mint_url') ?? defaultValue : defaultValue;
 
