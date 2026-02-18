@@ -19,7 +19,7 @@
     debugProofs,
     forceBalanceRefresh,
   } from "$lib/shared/utils";
-  import { CashuMint, CashuWallet, MintQuoteState } from "@cashu/cashu-ts";
+  import { Mint, Wallet, MintQuoteState } from "@cashu/cashu-ts";
   import Footer from "../../components/Footer.svelte";
   import { showToast } from "$lib/stores/toast";
   import Toast from "../../components/Toast.svelte";
@@ -125,10 +125,10 @@
    * Creates and initializes a Cashu wallet
    * @param {string} mintUrl - The URL of the mint
    * @param {string} seed - The wallet seed (mnemonic string)
-   * @returns {Promise<{wallet: CashuWallet, keys: any}>} The initialized wallet and its keys
+   * @returns {Promise<{wallet: Wallet, keysetId: string}>} The initialized wallet and its keyset ID
    */
   async function initializeWallet(mintUrl, seed) {
-    const mint = new CashuMint(mintUrl);
+    const mint = new Mint(mintUrl);
     const keysets = await mint.getKeys();
     const matchingKeyset = keysets.keysets.find((key) => key.unit === "xsr");
 
@@ -148,16 +148,20 @@
     let seedBytes = mnemonicToSeedSync(seed);
 
     // Create the wallet with the bip39seed parameter
-    const wallet = new CashuWallet(mint, {
+    // In cashu-ts v3.x, keys are fetched internally, we pass keysetId instead
+    const wallet = new Wallet(mint, {
       unit: "xsr",
-      keys: matchingKeyset,
+      keysetId: matchingKeyset.id,
       // Use the properly sized seed
       bip39seed: seedBytes,
       // Set denomination target to 1 to ensure we only use denomination 1
       denominationTarget: 1,
     });
 
-    return { wallet, keys: matchingKeyset };
+    // In v3, must load mint before using wallet
+    await wallet.loadMint();
+
+    return { wallet, keysetId: matchingKeyset.id || "default" };
   }
 
   /**
@@ -181,11 +185,11 @@
           "Initializing wallet with seed:",
           $seed ? $seed.substring(0, 3) + "..." : "undefined",
         );
-        const { wallet, keys } = await initializeWallet($mint_url, $seed);
+        const { wallet, keysetId } = await initializeWallet($mint_url, $seed);
 
         // Create the mint quote
         /** @type {import("@cashu/cashu-ts").MintQuoteResponse} */
-        let mintQuote = await wallet.createMintQuote(searches);
+        let mintQuote = await wallet.createMintQuoteBolt11(searches);
         isLoading = false; // Hide the spinner once we have the invoice
 
         const quote = {
@@ -210,8 +214,7 @@
         if (mintQuoteChecked.state === MintQuoteState.PAID) {
           let keyset_counts = getKeysetCounts();
 
-          // Get the stored counter, handling the case where keys.id might be undefined
-          const keysetId = keys && keys.id ? keys.id : "default";
+          // Use the keysetId returned from initializeWallet
           let keyset_count = keyset_counts[keysetId] || 0;
           console.log(
             "Using keyset count:",
@@ -220,28 +223,23 @@
             keysetId,
           );
 
-          const options = {
-            // Set outputAmounts to ensure only denomination 1 proofs
-            outputAmounts: {
-              // Create an array of 1's with length equal to the amount being minted
-              sendAmounts: Array(searches).fill(1),
-              keepAmounts: Array(searches).fill(1),
-            },
-            keysetId: keysetId, // Use the keyset ID if available, otherwise use "default"
-            counter: keyset_count, // Counter for blind signatures
-            // Not using these options for basic minting:
-            // outputData: undefined,  // For additional data
-            // p2pk: undefined,        // For P2PK locks
-            // proofsWeHave: undefined, // For splitting existing proofs
-            // pubkey: undefined        // For pubkey operations
+          // In v3, use MintProofsConfig and OutputType separately
+          const config = {
+            keysetId: keysetId,
+          };
+          /** @type {import("@cashu/cashu-ts").OutputType} */
+          const outputType = {
+            type: 'deterministic',
+            counter: keyset_count
           };
 
-          console.log("Minting proofs with options:", JSON.stringify(options));
-          // In cashu-ts v2, mintTokens is now mintProofs and returns proofs directly, not in an object
-          const proofs = await wallet.mintProofs(
+          console.log("Minting proofs with config:", JSON.stringify(config), "outputType:", JSON.stringify(outputType));
+          // In cashu-ts v3, use mintProofsBolt11 with separate config and outputType
+          const proofs = await wallet.mintProofsBolt11(
             searches,
             mintQuote.quote,
-            options,
+            config,
+            outputType
           );
 
           console.log("Successfully minted proofs:", proofs.length);
@@ -323,11 +321,10 @@
         "Initializing wallet with seed:",
         $seed ? $seed.substring(0, 3) + "..." : "undefined",
       );
-      const { wallet, keys } = await initializeWallet($mint_url, $seed);
+      const { wallet, keysetId } = await initializeWallet($mint_url, $seed);
       let keyset_counts = getKeysetCounts();
 
-      // Get the stored counter, handling the case where keys.id might be undefined
-      const keysetId = keys && keys.id ? keys.id : "default";
+      // Use the keysetId returned from initializeWallet
       let keyset_count = keyset_counts[keysetId] || 0;
       console.log(
         "Using keyset count:",
@@ -336,24 +333,19 @@
         keysetId,
       );
 
-      const options = {
-        // Set outputAmounts to ensure only denomination 1 proofs
-        outputAmounts: {
-          // Create an array of 1's with length equal to the amount being minted
-          sendAmounts: Array(mintQuote.amount).fill(1),
-        },
-        keysetId: keysetId, // Use the keyset ID if available, otherwise use "default"
-        counter: keyset_count, // Counter for blind signatures
-        // Not using these options for basic minting:
-        // outputData: undefined,  // For additional data
-        // p2pk: undefined,        // For P2PK locks
-        // proofsWeHave: undefined, // For splitting existing proofs
-        // pubkey: undefined        // For pubkey operations
+      // In v3, use MintProofsConfig and OutputType separately
+      const config = {
+        keysetId: keysetId,
+      };
+      /** @type {import("@cashu/cashu-ts").OutputType} */
+      const outputType = {
+        type: 'deterministic',
+        counter: keyset_count
       };
 
-      console.log("Minting proofs with options:", JSON.stringify(options));
-      // In cashu-ts v2, mintTokens is now mintProofs and returns proofs directly, not in an object
-      let proofs = await wallet.mintProofs(mintQuote.amount, quoteId, options);
+      console.log("Minting proofs with config:", JSON.stringify(config), "outputType:", JSON.stringify(outputType));
+      // In cashu-ts v3, use mintProofsBolt11 with separate config and outputType
+      let proofs = await wallet.mintProofsBolt11(mintQuote.amount, quoteId, config, outputType);
 
       console.log("Successfully minted proofs:", proofs.length);
       // Verify that all proofs have a denomination of 1
@@ -397,12 +389,11 @@
           $seed = generateWalletMnemonic();
           console.log("Generated new seed (mnemonic)");
         }
-        const { wallet, keys } = await initializeWallet($mint_url, $seed);
+        const { wallet, keysetId } = await initializeWallet($mint_url, $seed);
 
         let keyset_counts = getKeysetCounts();
 
-        // Get the stored counter, handling the case where keys.id might be undefined
-        const keysetId = keys && keys.id ? keys.id : "default";
+        // Use the keysetId returned from initializeWallet
         let keyset_count = keyset_counts[keysetId] || 0;
         let new_count = keyset_count + 10;
         keyset_counts[keysetId] = new_count;
@@ -443,7 +434,7 @@
 
   /**
    * Polls the mint quote state until it's paid or maximum attempts are reached
-   * @param {CashuWallet} wallet - The initialized wallet
+   * @param {Wallet} wallet - The initialized wallet
    * @param {string} quote - The mint quote identifier to check
    * @param {number} [interval=3000] - Polling interval in milliseconds
    * @param {number} [maxAttempts=100] - Maximum number of polling attempts
@@ -459,7 +450,7 @@
     let attempts = 0;
 
     while (attempts < maxAttempts) {
-      const mintQuoteChecked = await wallet.checkMintQuote(quote);
+      const mintQuoteChecked = await wallet.checkMintQuoteBolt11(quote);
       if (mintQuoteChecked.state === MintQuoteState.PAID) {
         return mintQuoteChecked;
       }

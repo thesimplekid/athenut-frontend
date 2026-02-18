@@ -3,8 +3,8 @@
   import seed from "$lib/shared/store/wallet";
   import mint_url from "$lib/shared/store/mint_url";
   import {
-    CashuMint,
-    CashuWallet,
+    Mint,
+    Wallet,
     CheckStateEnum,
     getDecodedToken,
   } from "@cashu/cashu-ts";
@@ -32,14 +32,14 @@
   let tokenRestoring = false; // Track if token redemption is in progress
   let contentReady = false;
 
-  /** @type {CashuWallet|null} */
+  /** @type {Wallet|null} */
   let wallet = null;
 
   $: isComplete = words.every((word) => word.trim().length > 0);
 
   // Initialize wallet instance
   async function initializeWallet() {
-    const mint = new CashuMint($mint_url);
+    const mint = new Mint($mint_url);
     let keysets = await mint.getKeys();
     let matchingKeyset = keysets.keysets.find((key) => key.unit === "xsr");
 
@@ -58,12 +58,16 @@
     // Convert the seed string to a proper 256-bit seed using SHA-256
     let seedBytes = mnemonicToSeedSync($seed);
 
-    wallet = new CashuWallet(mint, {
+    // In cashu-ts v3.x, keys are fetched internally, we pass keysetId instead
+    wallet = new Wallet(mint, {
       unit: "xsr",
-      keys: matchingKeyset,
+      keysetId: matchingKeyset.id,
       bip39seed: seedBytes,
       denominationTarget: 1,
     });
+
+    // In v3, must load mint before using wallet
+    await wallet.loadMint();
 
     return wallet;
   }
@@ -286,15 +290,14 @@
       console.log(`Creating ${unitDenominations.length} proofs of value 1`);
 
       // Set up the receive options with unit denominations
-      const receiveOptions = {
-        outputAmounts: {
-          sendAmounts: unitDenominations,
-        },
-      };
+      // In v3, use ReceiveConfig and OutputType
+      // Note: unit denominations are handled internally by the wallet
+      /** @type {import("@cashu/cashu-ts").OutputType} */
+      const outputType = { type: 'deterministic', counter: 0 };
 
       // Now receive the token with our specified output amounts
       console.log("Receiving token with unit denominations...");
-      const proofs = await wallet.receive(decodedToken, receiveOptions);
+      const proofs = await wallet.receive(decodedToken, {}, outputType);
 
       // Log the result for debugging
       console.log("Token receive result - proofs array:", proofs);
