@@ -112,7 +112,8 @@
 
       let encoded_token = getEncodedTokenV4(token);
 
-      let response = await fetch(`${PUBLIC_API_URL}/search?q=${search_query}`, {
+      const apiBase = PUBLIC_API_URL || '';
+      let response = await fetch(`${apiBase}/search?q=${search_query}`, {
         headers: { "X-Cashu": `${encoded_token}` },
       });
       
