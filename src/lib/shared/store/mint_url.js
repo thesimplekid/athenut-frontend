@@ -3,7 +3,7 @@ import { writable } from "svelte/store";
 
 // Use relative path for same-origin mint (e.g., "/mint" or just window.location.origin)
 // Falls back to hardcoded URL during SSR or if localStorage is empty
-const defaultValue = browser ? `${window.location.origin}/mint` : "";
+const defaultValue = browser ? window.location.origin : "";
 /** @type {string | undefined} */
 const initialValue = browser
   ? (window.localStorage.getItem("mint_url") ?? defaultValue)
