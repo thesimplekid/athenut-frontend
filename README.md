@@ -1,38 +1,135 @@
-# create-svelte
+# Athenut Frontend
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
+A privacy-preserving web search engine frontend powered by [Kagi](https://kagi.com/) search results and [Cashu](https://cashu.space/) ecash tokens. Users pay for searches with Bitcoin Lightning-funded Cashu tokens -- no accounts, no tracking.
 
-## Creating a project
+Backend: [athenut-mint](https://github.com/thesimplekid/athenut-mint)
 
-If you're seeing this, you've probably already done this step. Congrats!
+## How it works
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
+1. Top up your balance by paying a Lightning invoice, which mints Cashu tokens stored in your browser
+2. Each search spends one token, sent to the backend in an `X-Cashu` header
+3. The backend validates the token and returns search results
+4. No accounts, no cookies, no server-side state
 
-# create a new project in my-app
-npm create svelte@latest my-app
-```
+## Development
 
-## Developing
+This project uses [SvelteKit](https://kit.svelte.dev/) with the Node.js adapter, [Tailwind CSS](https://tailwindcss.com/), and [Vite](https://vitejs.dev/).
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+### With Nix (recommended)
 
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
+Enter the dev shell, which provides Node.js, Bun, and helper scripts:
 
 ```bash
-npm run build
+nix develop
 ```
 
-You can preview the production build with `npm run preview`.
+Then use the helper commands:
 
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+```bash
+bundev     # start dev server (localhost:5173)
+bunbuild   # production build
+bunstart   # run production build
+buntest    # run tests
+```
+
+### Without Nix
+
+```bash
+npm install
+npm run dev       # start dev server
+npm run build     # production build
+npm run preview   # preview production build
+```
+
+### Configuration
+
+Copy `.env.example` to `.env` and set `PUBLIC_API_URL`:
+
+```bash
+cp .env.example .env
+```
+
+| Variable         | Default | Description                                                                            |
+| ---------------- | ------- | -------------------------------------------------------------------------------------- |
+| `PUBLIC_API_URL` | `""`    | Backend API URL. Empty string means same-origin (frontend and backend on same domain). |
+
+## Building with Nix
+
+Build the package:
+
+```bash
+nix build .#athenut-frontend
+```
+
+Run the built server directly:
+
+```bash
+node ./result/lib/athenut-frontend/build/index.js
+```
+
+The server listens on `http://0.0.0.0:3000` by default. Control this with `PORT` and `HOST` environment variables.
+
+## NixOS module
+
+The flake exports a NixOS module at `nixosModules.default` that runs athenut-frontend as a systemd service.
+
+### Basic usage
+
+```nix
+# flake.nix
+{
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    athenut-frontend.url = "github:thesimplekid/athenut-frontend";
+  };
+
+  outputs = { nixpkgs, athenut-frontend, ... }: {
+    nixosConfigurations.myhost = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        athenut-frontend.nixosModules.default
+        {
+          services.athenut-frontend = {
+            enable = true;
+            publicApiUrl = "https://v2.athenut.com";
+          };
+        }
+      ];
+    };
+  };
+}
+```
+
+### Module options
+
+| Option         | Type    | Default           | Description                                               |
+| -------------- | ------- | ----------------- | --------------------------------------------------------- |
+| `enable`       | bool    | `false`           | Enable the athenut-frontend service                       |
+| `publicApiUrl` | string  | `""`              | Backend API URL (build-time; changing triggers a rebuild) |
+| `port`         | port    | `3000`            | Port the HTTP server listens on                           |
+| `host`         | string  | `"127.0.0.1"`     | Address the server binds to                               |
+| `package`      | package | built from source | Override the package derivation                           |
+
+### With a reverse proxy
+
+The service binds to `127.0.0.1:3000` by default. A typical setup puts nginx or caddy in front:
+
+```nix
+services.athenut-frontend = {
+  enable = true;
+  publicApiUrl = "";  # same origin -- proxy handles both frontend and backend
+};
+
+services.nginx.virtualHosts."search.example.com" = {
+  forceSSL = true;
+  enableACME = true;
+  locations."/" = {
+    proxyPass = "http://127.0.0.1:3000";
+    proxyWebsockets = true;
+  };
+};
+```
+
+## License
+
+[MIT](LICENSE)
