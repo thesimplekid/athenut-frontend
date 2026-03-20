@@ -45,7 +45,10 @@
       </a>
     </div>
   </div>
-  <!-- Search count removed to focus on UI fixes only -->
+  <div class="agent-info">
+    For agents: You can use the API directly instead of this web UI. See
+    <a href="https://athenut.com/skills.md" target="_blank" rel="noopener noreferrer">https://athenut.com/skills.md</a>
+  </div>
   <div class="footer-disclaimer">
     Athenut is experimental and in beta. Use with caution.
   </div>
@@ -124,6 +127,25 @@
     padding: 0 24px;
   }
 
+  .agent-info {
+    text-align: center;
+    font-size: 16px;
+    color: #4a5568;
+    margin-top: 24px;
+    padding: 0 24px;
+  }
+
+  .agent-info a {
+    color: #4a5568;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.2s ease;
+  }
+
+  .agent-info a:hover {
+    color: #1a1a1a;
+  }
+
   .horizontal-line-container {
     width: 100%;
     display: flex;
@@ -157,6 +179,10 @@
   .footer.dark {
     background-color: #1a1a1a;
     border-top-color: #2d2d2d;
+  }
+
+  .footer.dark .agent-info a:hover {
+    color: #ffffff;
   }
 
   .footer.dark .footer-brand-name {
