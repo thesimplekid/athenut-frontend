@@ -25,7 +25,7 @@
 
             src = pkgs.lib.cleanSource ./.;
 
-            npmDepsHash = "sha256-ib7e13BlJ/yQ+Gpz5u4+tWVJwVdDWwlTIqLuSd3vRYQ=";
+            npmDepsHash = "sha256-+M4PdmTHFttS1LQ16E4o95DnotHmTBtd8dCxhjgJuVs=";
 
             nodejs = pkgs.nodejs_22;
             makeCacheWritable = true;
