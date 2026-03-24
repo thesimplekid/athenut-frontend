@@ -11,11 +11,12 @@
     setKeysetCounts,
     writeProofs,
   } from "$lib/shared/utils";
-  import { getEncodedTokenV4 } from "@cashu/cashu-ts";
+  import { getEncodedToken } from "@cashu/cashu-ts";
   import { page } from "$app/stores";
   import Footer from "../../components/Footer.svelte";
   import { theme } from "$lib/stores/theme";
   import Navbar from "../../components/Navbar.svelte";
+  import { showToast } from "$lib/stores/toast";
 
   /** @type {import("@cashu/cashu-ts").Token} */
 
@@ -82,22 +83,51 @@
         await handleSearch();
       }
     } else {
-      alert("Unknown search param");
+      showToast("No search query provided");
     }
 
     balance = getBalance();
+
+    // Set up a listener for storage changes
+    const handleStorageChange = (e) => {
+      if (e.key === 'proofs') {
+        balance = getBalance();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   });
 
   async function handleSearch() {
+    if (isLoading || balance === 0) {
+      if (balance === 0) {
+        goto("/topup");
+      }
+      return;
+    }
+
     searchPerformed = true;
     isLoading = true;
     search_results = [];
     const startTime = Date.now();
 
     let proofs = getProofs();
+    if (proofs.length === 0) {
+      isLoading = false;
+      showToast("No proofs available. Please top up.");
+      balance = 0;
+      goto("/topup");
+      return;
+    }
 
     let proof = proofs.pop();
-    
+    // Immediately write updated proofs back to storage to prevent reuse if this attempt fails
+    writeProofs(proofs);
+
     // Preserve the keyset ID from the proof
     const keysetId = proof.id ? proof.id : "default";
     console.log(`Using keyset ID: ${keysetId} for search token redemption`);
@@ -107,21 +137,26 @@
       let token = {
         mint: $mint_url,
         proofs: [proof],
-        unit: "XSR"
+        unit: "xsr"
       };
 
-      let encoded_token = getEncodedTokenV4(token);
+      let encoded_token = getEncodedToken(token);
 
       const apiBase = PUBLIC_API_URL || '';
       let response = await fetch(`${apiBase}/search?q=${search_query}`, {
         headers: { "X-Cashu": `${encoded_token}` },
       });
-      
+
       if (!response.ok) {
+        if (response.status === 402) {
+          console.error("Payment required: token rejected by backend");
+          showToast("Payment Required: Proof rejected");
+          throw new Error("Payment Required: Proof rejected");
+        }
         console.error(`Error: ${response.status} ${response.statusText}`);
         throw new Error(`Search failed with status ${response.status}`);
       }
-      
+
       search_results = await response.json();
 
       // Update keyset counts to preserve the keyset ID
@@ -132,22 +167,20 @@
 
       /// Add spent proof to store
       addSpentProof(proof);
-      // Write the updated proofs back to storage
-      writeProofs(proofs);
 
-      console.log("Updated proofs after removing the used one: ", proofs);
+      console.log("Search successful, result count:", search_results.length);
       searchTime = ((Date.now() - startTime) / 1000).toFixed(2);
       balance = getBalance();
     } catch (error) {
       console.error("Search failed with error: ", error);
 
-      alert("Search failed");
+      const message = error instanceof Error ? error.message : "Search failed";
+      showToast(message);
 
       balance = getBalance();
+      // Only redirect if we have no more options
       if (balance == 0) {
         goto("/topup");
-      } else {
-        goto("/");
       }
     } finally {
       isLoading = false;
@@ -162,9 +195,7 @@
    * @returns {Promise<void>}
    */
   async function handleKeyup(e) {
-    if (e.key === "Enter" && balance === 0) {
-      goto("/topup");
-    } else if (e.key === "Enter" && balance > 0) {
+    if (e.key === "Enter") {
       await handleSearch();
     }
   }

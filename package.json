@@ -36,7 +36,7 @@
   },
   "type": "module",
   "dependencies": {
-    "@cashu/cashu-ts": "^3.4.1",
+    "@cashu/cashu-ts": "^3.6.1",
     "@scure/bip39": "^1.5.4",
     "@svelte-put/copy": "^3.0.0",
     "@svelte-put/qr": "^1.2.0",

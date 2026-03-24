@@ -10,7 +10,7 @@
   import { theme } from "$lib/stores/theme";
   import Navbar from "../../components/Navbar.svelte";
   import { getBalance, debugProofs, getProofs, forceBalanceRefresh } from "$lib/shared/utils";
-  import { getEncodedTokenV4 } from "@cashu/cashu-ts";
+  import { getEncodedToken } from "@cashu/cashu-ts";
   import { fade, fly, scale } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
 
@@ -46,16 +46,17 @@
       const token = {
         mint: $mint_url,
         proofs: filteredProofs,
-        unit: "XSR"
+        unit: "xsr"
       };
-      
+
       // Encode the token
-      const encoded = getEncodedTokenV4(token);
+      const encoded = getEncodedToken(token);
       
       return encoded;
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
       console.error("Error generating token:", error);
-      showToast("Failed to generate token: " + error.message);
+      showToast("Failed to generate token: " + message);
       return "";
     }
   }
