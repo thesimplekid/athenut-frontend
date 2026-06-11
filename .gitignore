@@ -1,7 +1,5 @@
 .env
-build/
-.svelte-kit/
-node_modules
-bun.lockb
+/target
+/dist
+/result
 .DS_Store
-

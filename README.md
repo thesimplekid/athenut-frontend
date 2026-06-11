@@ -13,65 +13,72 @@ Backend: [athenut-mint](https://github.com/thesimplekid/athenut-mint)
 
 ## Development
 
-This project uses [SvelteKit](https://kit.svelte.dev/) with the Node.js adapter, [Tailwind CSS](https://tailwindcss.com/), and [Vite](https://vitejs.dev/).
+This project is a Rust WebAssembly app built with [Leptos](https://book.leptos.dev/) (client-side rendered), using [CDK](https://docs.rs/cdk) for the Cashu wallet and [Trunk](https://trunkrs.dev/) for bundling. Wallet state is persisted in the browser's localStorage behind CDK's `WalletDatabase` trait.
 
 ### With Nix (recommended)
 
-Enter the dev shell, which provides Node.js, Bun, and helper scripts:
+Enter the dev shell, which provides the Rust toolchain (with the `wasm32-unknown-unknown` target), Trunk, and wasm tooling:
 
 ```bash
 nix develop
 ```
 
-Then use the helper commands:
+Then:
 
 ```bash
-bundev     # start dev server (localhost:5173)
-bunbuild   # production build
-bunstart   # run production build
-buntest    # run tests
+trunk serve    # start dev server (localhost:5173)
+trunk build    # development build into dist/
+trunk build --release   # production build
+cargo check --target wasm32-unknown-unknown   # type-check
+cargo test     # native test suite (cdk WalletDatabase conformance + unit tests)
 ```
 
-### Without Nix
+### With just
+
+A [justfile](justfile) wraps the common commands (each recipe runs inside the dev shell, so they work from any shell):
 
 ```bash
-npm install
-npm run dev       # start dev server
-npm run build     # production build
-npm run preview   # preview production build
+just            # list recipes
+just dev        # trunk serve (localhost:5173)
+just build      # development build
+just release    # production build
+just check      # cargo check (wasm target)
+just test       # native test suite
+just clippy     # lint
+just fmt        # format
+just nix-build  # nix build .#athenut-frontend
+just serve      # serve dist/ with SPA fallback on :3000
 ```
 
 ### Configuration
 
-Copy `.env.example` to `.env` and set `PUBLIC_API_URL`:
+| Variable         | Default | Description                                                                             |
+| ---------------- | ------- | --------------------------------------------------------------------------------------- |
+| `PUBLIC_API_URL` | `""`    | Backend API URL. Empty string means same-origin (frontend and backend on same domain). |
+
+`PUBLIC_API_URL` is read at compile time (`option_env!`), so export it before running trunk:
 
 ```bash
-cp .env.example .env
+PUBLIC_API_URL="https://athenut.com" trunk serve
 ```
-
-| Variable         | Default | Description                                                                            |
-| ---------------- | ------- | -------------------------------------------------------------------------------------- |
-| `PUBLIC_API_URL` | `""`    | Backend API URL. Empty string means same-origin (frontend and backend on same domain). |
 
 ## Building with Nix
 
-Build the package:
+Build the package (a static site in the store path):
 
 ```bash
 nix build .#athenut-frontend
 ```
 
-Run the built server directly:
+Serve the result locally:
 
 ```bash
-node ./result/lib/athenut-frontend/build/index.js
+static-web-server --port 3000 --root ./result --page-fallback ./result/index.html
 ```
-
-The server listens on `http://0.0.0.0:3000` by default. Control this with `PORT` and `HOST` environment variables.
 
 ## NixOS module
 
-The flake exports a NixOS module at `nixosModules.default` that runs athenut-frontend as a systemd service.
+The flake exports a NixOS module at `nixosModules.default` that serves the built static site as a systemd service (via `static-web-server`).
 
 ### Basic usage
 
@@ -105,7 +112,7 @@ The flake exports a NixOS module at `nixosModules.default` that runs athenut-fro
 | Option         | Type    | Default           | Description                                               |
 | -------------- | ------- | ----------------- | --------------------------------------------------------- |
 | `enable`       | bool    | `false`           | Enable the athenut-frontend service                       |
-| `publicApiUrl` | string  | `""`              | Backend API URL (build-time; changing triggers a rebuild) |
+| `publicApiUrl` | string  | `"https://athenut.com"` | Backend API URL, also the default mint URL (build-time; changing triggers a rebuild). Set to `""` for same-origin. |
 | `port`         | port    | `3000`            | Port the HTTP server listens on                           |
 | `host`         | string  | `"127.0.0.1"`     | Address the server binds to                               |
 | `package`      | package | built from source | Override the package derivation                           |

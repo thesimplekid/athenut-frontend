@@ -2,9 +2,13 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay }:
     let
       # NixOS module (system-independent)
       nixosModule = import ./nix/module.nix { inherit self; };
@@ -15,42 +19,67 @@
     //
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ (import rust-overlay) ];
+        };
 
-        # The athenut-frontend package built with buildNpmPackage
+        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
+          targets = [ "wasm32-unknown-unknown" ];
+          extensions = [ "rust-src" "rust-analyzer" ];
+        };
+
+        rustPlatform = pkgs.makeRustPlatform {
+          cargo = rustToolchain;
+          rustc = rustToolchain;
+        };
+
+        # secp256k1-sys (C code) must be compiled for wasm32 with clang.
+        # The wrapped NixOS clang injects native glibc flags, so use the
+        # unwrapped one plus its builtin headers.
+        wasmClangEnv = {
+          CC_wasm32_unknown_unknown = "${pkgs.llvmPackages.clang-unwrapped}/bin/clang";
+          CFLAGS_wasm32_unknown_unknown = "-I${pkgs.llvmPackages.libclang.lib}/lib/clang/${pkgs.lib.versions.major pkgs.llvmPackages.libclang.version}/include";
+          AR_wasm32_unknown_unknown = "${pkgs.llvmPackages.bintools-unwrapped}/bin/llvm-ar";
+        };
+
+        # The athenut-frontend package: a Leptos (wasm) app bundled with trunk
+        # into a static site.
         mkAthenutFrontend = { publicApiUrl ? "" }:
-          pkgs.buildNpmPackage {
+          rustPlatform.buildRustPackage {
             pname = "athenut-frontend";
-            version = "0.0.1";
+            version = "0.1.0";
 
             src = pkgs.lib.cleanSource ./.;
 
-            npmDepsHash = "sha256-+M4PdmTHFttS1LQ16E4o95DnotHmTBtd8dCxhjgJuVs=";
+            cargoLock.lockFile = ./Cargo.lock;
 
-            nodejs = pkgs.nodejs_22;
-            makeCacheWritable = true;
+            nativeBuildInputs = with pkgs; [
+              trunk
+              wasm-bindgen-cli
+              binaryen
+            ];
 
-            # PUBLIC_API_URL is a build-time static env var for SvelteKit
-            env.PUBLIC_API_URL = publicApiUrl;
+            # PUBLIC_API_URL is a build-time static env var (option_env!)
+            env = {
+              PUBLIC_API_URL = publicApiUrl;
+              TRUNK_SKIP_VERSION_CHECK = "true";
+              TRUNK_OFFLINE = "true";
+            } // wasmClangEnv;
 
             buildPhase = ''
               runHook preBuild
-              npm run build
+              XDG_CACHE_HOME=$TMPDIR/cache trunk build --release --dist dist
               runHook postBuild
             '';
 
             installPhase = ''
               runHook preInstall
-
-              mkdir -p $out/lib/athenut-frontend
-              cp -r build $out/lib/athenut-frontend/build
-              cp package.json $out/lib/athenut-frontend/
-
-              # Copy production node_modules needed at runtime
-              cp -r node_modules $out/lib/athenut-frontend/node_modules
-
+              cp -r dist $out
               runHook postInstall
             '';
+
+            doCheck = false;
 
             passthru = {
               override = args: mkAthenutFrontend ({
@@ -64,58 +93,42 @@
               maintainers = [ ];
             };
           };
-
-        # scripts
-        bunbuild = pkgs.writeShellScriptBin "bunbuild" ''
-          bun run build
-        '';
-
-        bundev = pkgs.writeShellScriptBin "bundev" ''
-          bun run dev
-        '';
-
-        bunstart = pkgs.writeShellScriptBin "bunstart" ''
-          bun run start
-        '';
-
-        buntest = pkgs.writeShellScriptBin "buntest" ''
-          bun run test
-        '';
       in
-      with pkgs; {
+      {
         packages = {
           athenut-frontend = mkAthenutFrontend { };
           default = self.packages.${system}.athenut-frontend;
         };
 
-        devShell = mkShell {
-          buildInputs = [
-            # list whatever packages you need
-            # search for packages at https://search.nixos.org/
-
+        devShells.default = pkgs.mkShell {
+          buildInputs = with pkgs; [
             # formatting for .nix files
             nixpkgs-fmt
 
-            # binaries
-            nodejs_22
-            bun
-            playwright-driver.browsers # node package version and this must match
+            # rust toolchain with wasm target
+            rustToolchain
 
-            # custom scripts defined above
-            bunbuild
-            bundev
-            bunstart
-            buntest
+            # wasm bundling
+            trunk
+            wasm-bindgen-cli
+            binaryen
 
-            nodePackages.svelte-language-server
+            # serve the built dist locally
+            static-web-server
+
+            # task runner (see justfile)
+            just
           ];
 
-          shellHook = ''
-            export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+          env = wasmClangEnv;
 
-            bun install
+          shellHook = ''
+            export TRUNK_SKIP_VERSION_CHECK=true
           '';
         };
+
+        # Keep legacy attribute for `nix develop` compat
+        devShell = self.devShells.${system}.default;
       }
     );
 }

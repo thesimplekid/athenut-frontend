@@ -1,0 +1,49 @@
+[package]
+name = "athenut-frontend"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Athenut - Privacy-preserving search engine frontend"
+
+[dependencies]
+leptos = { version = "0.8", features = ["csr"] }
+leptos_router = "0.8"
+leptos_meta = "0.8"
+cdk = { version = "0.17.0-rc.3", default-features = false, features = ["wallet"] }
+cdk-common = { version = "0.17.0-rc.3", default-features = false, features = ["wallet"] }
+bip39 = { version = "2.1", features = ["rand"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+async-trait = "0.1"
+uuid = "1"
+gloo-net = { version = "0.6", default-features = false, features = ["http", "json"] }
+wasm-bindgen = "=0.2.121"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+gloo-timers = { version = "0.3", features = ["futures"] }
+qrcode = { version = "0.14", default-features = false, features = ["svg"] }
+console_error_panic_hook = "0.1"
+web-time = "1"
+web-sys = { version = "0.3", features = [
+  "Window",
+  "Storage",
+  "Clipboard",
+  "Navigator",
+  "Location",
+  "Document",
+  "DomTokenList",
+  "Element",
+  "HtmlElement",
+  "StorageEvent",
+] }
+
+[dev-dependencies]
+# Pulls in cdk's generic WalletDatabase conformance test suite (wallet_db_test!)
+cdk-common = { version = "0.17.0-rc.3", default-features = false, features = ["wallet", "test"] }
+tokio = { version = "1", features = ["macros", "rt"] }
+paste = "1"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1

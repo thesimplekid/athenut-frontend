@@ -1,5 +1,5 @@
-[language-server.svelteserver.config]
+[language-server.rust-analyzer.config]
 
 [[language]]
-name = "svelte"
+name = "rust"
 auto-format = true
