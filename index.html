@@ -15,5 +15,51 @@
 		<link data-trunk rel="copy-dir" href="assets" />
 		<link data-trunk rel="rust" />
 	</head>
-	<body></body>
+	<body>
+		<div id="wasm-notice" hidden>
+			<div class="wasm-notice-card">
+				<h1>WebAssembly is required</h1>
+				<p>
+					Athenut runs entirely in your browser using WebAssembly, which
+					appears to be unavailable. On iPhone, iPad, and Mac this is
+					usually caused by Lockdown Mode, which disables WebAssembly.
+				</p>
+				<p>If you trust this site, you can exclude it from Lockdown Mode:</p>
+				<ul>
+					<li>
+						In Safari, tap the page settings button (<strong>&#x1D00;A</strong>)
+						in the address bar and turn off Lockdown Mode for this website,
+						then reload.
+					</li>
+					<li>
+						Or go to Settings &rarr; Privacy &amp; Security &rarr; Lockdown
+						Mode &rarr; Configure Web Browsing and add this site to the
+						excluded websites.
+					</li>
+				</ul>
+			</div>
+		</div>
+		<script>
+			(function () {
+				var supported = false;
+				try {
+					// Compile a trivial module so CSP-blocked wasm is caught too,
+					// not just a missing WebAssembly global (Lockdown Mode).
+					supported =
+						typeof WebAssembly === "object" &&
+						new WebAssembly.Module(
+							new Uint8Array([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00])
+						) instanceof WebAssembly.Module;
+				} catch (e) {
+					supported = false;
+				}
+				var notice = document.getElementById("wasm-notice");
+				if (supported) {
+					notice.remove();
+				} else {
+					notice.hidden = false;
+				}
+			})();
+		</script>
+	</body>
 </html>

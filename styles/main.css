@@ -1988,3 +1988,49 @@ a {
     font-size: 0.9rem;
   }
 }
+
+/* ---------- WebAssembly-unavailable notice (Lockdown Mode etc.) ---------- */
+
+#wasm-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1.5rem;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+#wasm-notice[hidden] {
+  display: none;
+}
+
+#wasm-notice .wasm-notice-card {
+  max-width: 32rem;
+  padding: 2rem;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background-color: var(--bg-secondary);
+}
+
+#wasm-notice h1 {
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+#wasm-notice p {
+  margin-bottom: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+#wasm-notice ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+#wasm-notice li {
+  margin-bottom: 0.5rem;
+}
